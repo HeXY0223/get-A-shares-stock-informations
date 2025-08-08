@@ -72,9 +72,6 @@ if __name__ == '__main__':
             database=database
         )
     engine = sqlalchemy.create_engine(db_conn_str)
-    # stock_basics = get_stock_basics()
-    # print(stock_basics.head())
-    # stock_basics.to_excel('stock_basics.xlsx')
     upsert_stock_basics(engine, table_name='test_stock_basic_info', create_sql_command='USE DEFAULT stock_basic_info')
 
 
