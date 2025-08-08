@@ -1,4 +1,4 @@
-# src/main.py
+# src/demo.py
 import warnings
 # 忽略所有 FutureWarning
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -22,6 +22,7 @@ if __name__ == '__main__':
     # 下载股票基础信息（如果没有）
     upsert_stock_basics(engine=engine)
     # 电子信息类股票日线 特别慢！！！！！
+    # 如果想用就解开下面那两行注释
     query = 'select ts_code from sw_category where l1_name="电子" or l1_name="计算机" or l1_name="通信"'
     df = pd.read_sql(query, engine)
     ts_codes = df['ts_code'].tolist()
