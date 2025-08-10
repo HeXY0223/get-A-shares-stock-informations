@@ -16,8 +16,7 @@ def get_index_daily(ts_code:str="", start_date:str='20200806', end_date:str='202
     try:
         index_data = pro.index_daily(ts_code=ts_code, start_date=start_date, end_date=end_date)
         if index_data.empty:
-            if echo:
-                print(f"无法访问代码为{ts_code}的股票，跳过。")
+            if echo: print(f"无法访问代码为{ts_code}的股票，跳过。")
             return pd.DataFrame()
         return index_data
     except Exception as e:
