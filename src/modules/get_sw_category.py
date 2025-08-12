@@ -4,13 +4,13 @@ from dotenv import load_dotenv
 import pandas as pd
 import sqlalchemy
 
-from utils.utils import easyConnect, show_func_name
+from utils.utils import easyConnect, output_controller
 
 
 # 注：申万行业分类一共包含了 5733只股票，但是有些股票不止分在了一个行业，所以实际上一共有 5815行。
 #    这也导致了它无法与 stock_basic_info合并。
 
-@show_func_name
+@output_controller
 def get_sw_category(engine, src:str='SW2021', echo=False):
     load_dotenv()
     api_key = os.getenv('API_KEY')

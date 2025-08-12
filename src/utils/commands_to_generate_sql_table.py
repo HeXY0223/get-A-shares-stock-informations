@@ -46,6 +46,7 @@ generator = {
                       -- 通用数据 (Common Data) --
                       `volume` BIGINT NULL COMMENT '成交量 (手)',
                       `amount` DECIMAL(20, 2) NULL COMMENT '成交额 (千元)',
+                      `adj_factor` DECIMAL(10, 5) NULL COMMENT '复权因子',
                     
                       -- 前复权数据 (Forward-Adjusted) --
                       `open_qfq` DECIMAL(10, 2) NULL COMMENT '开盘价 (前复权)',
@@ -89,7 +90,44 @@ generator = {
                       PRIMARY KEY (`ts_code`, `trade_date`)
                     ) ENGINE=InnoDB COMMENT='指数日行情数据表';
 
-'''
+''',
 
+# =================================================================
+#  表 1: 因子元数据表 (factor_metadata)
+#  用途: 存储每个因子的定义、类别等静态信息。
+# =================================================================
+'factor_metadata':'''
+                    CREATE TABLE `factor_metadata` (
+                      `factor_name` VARCHAR(50) NOT NULL COMMENT '因子名称，如“市盈率（PE）”',
+                      `category` VARCHAR(20) NOT NULL COMMENT '因子类别，如“价值类”、“成长类”',
+                      `definition` TEXT COMMENT '因子的计算公式或详细定义',
+                      PRIMARY KEY (`factor_name`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='因子元数据定义表';
+''',
+# =================================================================
+#  表 2: 因子面板数据表 (factor_panel_data)
+#  用途: 存储所有股票在不同交易日的具体因子值，采用窄表结构。
+# =================================================================
+'factor_panel_data':'''
+                    CREATE TABLE `factor_panel_data` (
+                      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增主键ID',
+                      `stock_code` VARCHAR(15) NOT NULL COMMENT '股票代码，如“600519.SH”或“000001.SZ”',
+                      `trade_date` DATE NOT NULL COMMENT '交易日期',
+                      `factor_name` VARCHAR(50) NOT NULL COMMENT '因子名称，关联到 factor_metadata 表',
+                      `factor_value` DOUBLE NOT NULL COMMENT '因子值',
+                      PRIMARY KEY (`id`),
+                      -- 创建外键约束，确保因子名称在元数据表中存在
+                      CONSTRAINT `fk_factor_name`
+                        FOREIGN KEY (`factor_name`)
+                        REFERENCES `factor_metadata` (`factor_name`)
+                        ON DELETE RESTRICT
+                        ON UPDATE CASCADE,
+                      -- === 关键性能优化：创建索引 ===
+                      -- 索引1: 针对“查询某只股票一段时间的多个因子”的场景进行优化
+                      INDEX `idx_stock_date` (`stock_code`, `trade_date`),
+                      -- 索引2: 针对“查询某个因子在某个截面日的所有股票”的场景进行优化 (非常重要！)
+                      INDEX `idx_factor_date` (`factor_name`, `trade_date`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='因子面板数据表';
+'''
 
                     }

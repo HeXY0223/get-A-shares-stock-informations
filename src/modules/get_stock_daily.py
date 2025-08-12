@@ -23,13 +23,12 @@ def get_stock_daily(ts_code:list=[], start_date:str='20200806', end_date:str='20
             cq_data = ts.pro_bar(ts_code=each_code, start_date=start_date, end_date=end_date, adj=None)  # 不复权
             qfq_data = ts.pro_bar(ts_code=each_code, start_date=start_date, end_date=end_date, adj='qfq')  # 前复权
             hfq_data = ts.pro_bar(ts_code=each_code, start_date=start_date, end_date=end_date, adj='hfq')  # 后复权
-
+            adjfactor_data = pro.adj_factor(ts_code=each_code, start_date=start_date, end_date=end_date)
             # 对于无法访问的股票（如IPO终止、退市过早等等），直接抛弃掉
-            if cq_data.empty or qfq_data.empty or hfq_data.empty:
+            if cq_data.empty or qfq_data.empty or hfq_data.empty or adjfactor_data.empty:
                 # 先看看这股票叫啥
                 name = pro.index_member_all(ts_code=each_code)['name'][0]
-                if echo:
-                    print(f"无法访问到{name}(股票代码:{each_code})。这可能是因为该股票IPO终止，或者退市过早。")
+                if echo: print(f"无法访问到{name}(股票代码:{each_code})。这可能是因为该股票IPO终止，或者退市过早。")
                 cannot_access = True
                 break
             # 重命名除权&复权字段
@@ -39,7 +38,7 @@ def get_stock_daily(ts_code:list=[], start_date:str='20200806', end_date:str='20
 
             merged = pd.merge(cq_data[['ts_code','trade_date','open','high','low','close','volume','amount']], qfq_data[['ts_code', 'trade_date', 'open_qfq', 'high_qfq', 'low_qfq', 'close_qfq', 'pre_close_qfq', 'price_change_qfq']], on=['ts_code', 'trade_date'], how='left')
             merged = pd.merge(merged, hfq_data[['ts_code', 'trade_date', 'open_hfq', 'high_hfq', 'low_hfq', 'close_hfq', 'pre_close_hfq', 'price_change_hfq']], on=['ts_code', 'trade_date'], how='left')
-
+            merged = pd.merge(merged, adjfactor_data, on=['ts_code', 'trade_date'], how='left')
             if merged.isnull().any().any() and merged.isnull().sum().sum() != 4:  # 如果有空值 不等于4的原因是：如果刚上市的股票会在上市第一天缺少 pre_close和 price_change的前复权和后复权数据，一共四个。
                 nan_count += 1
                 merged = pd.DataFrame()  # 清空merged
@@ -64,8 +63,7 @@ def get_stock_daily(ts_code:list=[], start_date:str='20200806', end_date:str='20
         return pd.DataFrame()
 
 
-from utils.utils import *
-import pymysql.err
+
 def upsert_daily_markets(engine, ts_codes:list=[],
                          start_date:str='20200806', end_date:str='20250806',
                          strategy:str='conservative', table_name='stock_daily',
@@ -79,16 +77,6 @@ def upsert_daily_markets(engine, ts_codes:list=[],
         time.sleep(1)
 
 if __name__ == '__main__':
-    load_dotenv()
-    password = os.environ.get("PASSWORD")
-    database = os.environ.get("DATABASE")
-    db_conn_str = \
-        r'mysql+pymysql://root:{password}@{host}:{port}/{database}'.format(
-            password=password,
-            host='localhost',
-            port=3306,
-            database=database
-        )
-    engine = sqlalchemy.create_engine(db_conn_str)
+    engine = easyConnect()
     upsert_daily_markets(engine=engine,ts_codes=['000050.SZ'], start_date='20200806', end_date='20250806',
                          table_name='test_stock_daily_1')

@@ -7,8 +7,10 @@ from utils.commands_to_generate_sql_table import generator
 import pandas as pd
 from dotenv import load_dotenv
 import os
+from utils.show_func_name_utils import *
 
-def ensure_table_exists(engine, table_name: str, create_sql: str="", echo=False):
+
+def ensure_table_exists(engine, table_name: str, create_sql: str="", echo=False, df=pd.DataFrame()):
     """
     检查数据库中是否存在指定的表，如果不存在，则根据提供的SQL语句创建它。
 
@@ -21,14 +23,19 @@ def ensure_table_exists(engine, table_name: str, create_sql: str="", echo=False)
     if not inspector.has_table(table_name):
         if echo: print(f"表格 '{table_name}' 不存在，正在自动创建...")
         try:
-            if create_sql == "" or create_sql == "akaza akari":
+            if create_sql in ["", "auto", "akaza akari"]:
                 if echo: print("未输入SQL语句。")
                 if table_name in generator.keys():
                     if echo: print("在预设的SQL语句中找到了匹配的创建表格选项。")
                     create_sql = generator[table_name]
                 else:
-                    print("并未在预设的SQL语句中找到了匹配的创建表格选项，创建表格失败。")
-                    return False
+                    if df.empty:
+                        print("并未在预设的SQL语句中找到了匹配的创建表格选项，创建表格失败。")
+                        return False
+                    else:
+                        df.to_sql(table_name, engine)
+                        if echo: print("使用传入的数据自动新建了表格。")
+                        return True
             elif create_sql[:11].lower() == "use default":
                 default_sql = create_sql.lower().replace("use default","").replace(" ","")
                 if default_sql in generator.keys():
@@ -51,7 +58,7 @@ def ensure_table_exists(engine, table_name: str, create_sql: str="", echo=False)
         # print(f"表格 '{table_name}' 已存在，无需创建。")
         return True
 
-
+@output_controller
 def upsert_to_mysql(engine, table_name:str, df_uncleaned:pd.DataFrame, primary_key:list=['ts_code'],create_sql_command: str="", echo=False):
     if df_uncleaned is None or df_uncleaned.empty:
         print("传入的DataFrame为空，操作已跳过。")
@@ -61,6 +68,7 @@ def upsert_to_mysql(engine, table_name:str, df_uncleaned:pd.DataFrame, primary_k
     df = df_uncleaned.astype(object).where(pd.notnull(df_uncleaned), None)
     # 从 DataFrame 获取列名
     cols = [f"`{col}`" for col in df.columns]
+    print(cols)
     cols_str = ", ".join(cols)
     # 构造 VALUES 部分的具名占位符
     placeholders = ", ".join(f":{col}" for col in df.columns)
@@ -80,7 +88,8 @@ def upsert_to_mysql(engine, table_name:str, df_uncleaned:pd.DataFrame, primary_k
 
     # 执行SQL
     try:
-        if not ensure_table_exists(engine, table_name, create_sql_command, echo):
+
+        if not ensure_table_exists(engine, table_name, create_sql_command, echo, df=df):
             raise pymysql.err.ProgrammingError("并未发现已存在的表格；同时尝试创建表格也失败了。")
         with engine.connect() as conn:
             with conn.begin() as transaction:
@@ -105,30 +114,3 @@ def easyConnect() -> sqlalchemy.engine.base.Engine:
     return engine
 
 
-def show_func_name(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        # 获取echo参数的位置
-        sig = inspect.signature(func)
-        params = sig.parameters
-        param_names = list(params.keys())
-        echo = None
-        # 先找关键字参数
-        if 'echo' in kwargs:
-            echo = kwargs['echo']
-        else:
-            # 再找位置参数
-            if 'echo' in param_names:
-                index = param_names.index('echo')
-                if index < len(args):
-                    echo = args[index]
-        # echo默认值处理
-        if echo is None and 'echo' in params:
-            echo = params['echo'].default
-        # 判断是否需要输出
-        if echo:
-            print(f"【来自{func.__name__}函数的消息:】")
-            return func(*args, **kwargs)
-        # echo为False时直接返回，不输出
-        return
-    return wrapper
