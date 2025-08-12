@@ -8,20 +8,17 @@ from .base import FactorBase
 from utils.utils import *
 import tushare as ts
 
-# --- 数据获取占位符 ---
-# 你需要根据你的实际情况实现这个函数，例如使用 Tushare API。
-# 它的功能是获取指定股票列表在某时间段内的日线行情数据。
+
+# 获取指定股票列表在某时间段内的日线行情数据
 def get_daily_data(ts_codes: list[str], start_date: str, end_date: str) -> pd.DataFrame:
     """
-    获取日线行情数据的示例函数 (占位符)。
+    获取日线行情数据的示例函数。
 
-    返回的 DataFrame 应包含:
+    返回的 DataFrame 包含:
     - ts_code: 股票代码
     - trade_date: 交易日期
     - close: 复权收盘价
     """
-    # 此处应为调用 Tushare 或其他数据源 API 的真实代码
-    # 为方便演示，这里我们生成一些随机数据
     print(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的数据...")
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
@@ -41,7 +38,7 @@ def get_daily_data(ts_codes: list[str], start_date: str, end_date: str) -> pd.Da
 
 class Return12M(FactorBase):
     """
-    因子16：12个月收益率
+    12个月收益率
     计算公式：过去250个交易日累计收益率（复权）
     """
 
@@ -66,7 +63,7 @@ class Return12M(FactorBase):
 
 class Alpha6M(FactorBase):
     """
-    因子17：6个月超额收益（Alpha）
+    6个月超额收益（Alpha）
     计算公式：个股收益率 - 申万电子指数收益率（120日）
     """
 
@@ -103,7 +100,7 @@ class Alpha6M(FactorBase):
 
 class RSI14(FactorBase):
     """
-    因子18：相对强弱指标（RSI_14）
+    相对强弱指标（RSI_14）
     计算公式：14日平均涨幅 / (14日平均涨幅 + 14日平均跌幅) × 100
     """
 

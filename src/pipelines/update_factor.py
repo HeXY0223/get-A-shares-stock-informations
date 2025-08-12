@@ -11,7 +11,8 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from factor_lab.momentum import Return12M, Alpha6M, RSI14
 
 
-# from factor_lab.value import PE, PB # 将来可以添加更多
+from factor_lab.value import PE, PB, PS, DY, EVEBITDA
+# 将来可以添加更多
 
 def run_factor_update(table_name:str="factor_panel_data", echo=False):
     """
@@ -28,8 +29,11 @@ def run_factor_update(table_name:str="factor_panel_data", echo=False):
         Return12M,
         Alpha6M,
         RSI14,
-        # PE, # 即将实现
-        # PB,
+        PE,
+        PB,
+        PS,
+        DY,
+        EVEBITDA
     ]
 
     # --- 执行区 ---
@@ -44,7 +48,7 @@ def run_factor_update(table_name:str="factor_panel_data", echo=False):
             )
 
             # 2. 调用统一的保存方法
-            factor_instance.save_to_db(table_name=table_name, echo=echo)
+            factor_instance.save_to_db(table_name=table_name, create_sql='USE DEFAULT factor_panel_data', echo=echo)
 
         except Exception as e:
             # 增加错误处理，确保一个因子失败不会中断整个流程

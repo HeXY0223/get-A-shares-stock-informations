@@ -73,7 +73,7 @@ class FactorBase(abc.ABC):
         # 调整列序以匹配数据库表结构
         return narrow_df[['ts_code', 'trade_date', 'factor_name', 'factor_value']]
 
-    def save_to_db(self, table_name:str="", echo=False):
+    def save_to_db(self, table_name:str="", create_sql:str="", echo=False):
         """
         执行因子计算并将结果保存到数据库。
 
@@ -108,6 +108,7 @@ class FactorBase(abc.ABC):
             table_name=table_name,
             df_uncleaned=narrow_factor_values,
             primary_key=['ts_code', 'trade_date', 'factor_name'],
+            create_sql_command=create_sql,
             echo=echo
         )
         print(f"因子 {self.factor_name} 数据同步完成。")

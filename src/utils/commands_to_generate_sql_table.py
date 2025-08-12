@@ -100,7 +100,7 @@ generator = {
 #  用途: 存储每个因子的定义、类别等静态信息。
 # =================================================================
 'factor_metadata':'''
-                    CREATE TABLE `factor_metadata` (
+                    CREATE TABLE `{table_name}` (
                       `factor_name` VARCHAR(50) NOT NULL COMMENT '因子名称，如“市盈率（PE）”',
                       `category` VARCHAR(20) NOT NULL COMMENT '因子类别，如“价值类”、“成长类”',
                       `definition` TEXT COMMENT '因子的计算公式或详细定义',
@@ -112,7 +112,7 @@ generator = {
 #  用途: 存储所有股票在不同交易日的具体因子值，采用窄表结构。
 # =================================================================
 'factor_panel_data':'''
-                    CREATE TABLE `factor_panel_data` (
+                    CREATE TABLE `{table_name}` (
                       `ts_code` VARCHAR(15) NOT NULL COMMENT '股票代码，如“600519.SH”',
                       `trade_date` DATE NOT NULL COMMENT '交易日期',
                       `factor_name` VARCHAR(50) NOT NULL COMMENT '因子名称，关联到 factor_metadata 表',
