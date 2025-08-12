@@ -1,8 +1,7 @@
-import pandas as pd
 from utils.utils import *
 import tushare as ts
 from dotenv import load_dotenv
-from modules.get_stock_daily import upsert_daily_markets
+from data_fetchers.stock_daily_fetcher import upsert_daily_markets
 def update_stock_daily(engine, table_name:str, echo=False):
     load_dotenv()
     api_key = os.getenv("API_KEY")

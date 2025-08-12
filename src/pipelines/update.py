@@ -1,11 +1,10 @@
 import warnings
 # 忽略所有 FutureWarning
 warnings.simplefilter(action='ignore', category=FutureWarning)
-import pandas as pd
 from utils.utils import *  # 假设包含 easyConnect 和 upsert_to_mysql
 import tushare as ts
 from dotenv import load_dotenv
-from modules.get_stock_daily import upsert_daily_markets  # 假设此函数用于增量更新
+from data_fetchers.stock_daily_fetcher import upsert_daily_markets  # 假设此函数用于增量更新
 from datetime import datetime, timedelta
 import os
 import numpy as np

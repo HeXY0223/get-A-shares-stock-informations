@@ -3,17 +3,10 @@ import warnings
 # 忽略所有 FutureWarning
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-from modules.get_sw_category import get_sw_category
-import os
-from dotenv import load_dotenv
-import tushare as ts
-from modules.get_stock_daily import upsert_daily_markets
-import sqlalchemy
-import pandas as pd
+from data_fetchers.stock_daily_fetcher import upsert_daily_markets
 from utils.utils import *
-from modules.get_stock_basics import upsert_stock_basics
-from modules.get_index_basics import upsert_index_basics
-from modules.get_index_daily import upsert_index_daily
+from data_fetchers.index_basics_fetcher import upsert_index_basics
+from data_fetchers.index_daily_fetcher import upsert_index_daily
 
 if __name__ == '__main__':
     engine = easyConnect()
