@@ -1,3 +1,6 @@
+# 存放生成 SQL表的命令，这些命令带主键、外键、注释。
+# Here saves instructions to generate SQL tables, which contains primary key, foreign key commands and comments.
+
 generator = {
 'stock_basic_info': '''
                     CREATE TABLE `{table_name}`
@@ -110,24 +113,26 @@ generator = {
 # =================================================================
 'factor_panel_data':'''
                     CREATE TABLE `factor_panel_data` (
-                      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增主键ID',
-                      `stock_code` VARCHAR(15) NOT NULL COMMENT '股票代码，如“600519.SH”或“000001.SZ”',
+                      `ts_code` VARCHAR(15) NOT NULL COMMENT '股票代码，如“600519.SH”',
                       `trade_date` DATE NOT NULL COMMENT '交易日期',
                       `factor_name` VARCHAR(50) NOT NULL COMMENT '因子名称，关联到 factor_metadata 表',
-                      `factor_value` DOUBLE NOT NULL COMMENT '因子值',
-                      PRIMARY KEY (`id`),
-                      -- 创建外键约束，确保因子名称在元数据表中存在
-                      CONSTRAINT `fk_factor_name`
+                      `factor_value` DOUBLE DEFAULT NULL COMMENT '因子值 (允许为NULL以处理缺失值)',
+            
+                      PRIMARY KEY (`ts_code`, `trade_date`, `factor_name`),
+                      
+
+                      -- 查询某个因子在某个交易日的所有股票表现
+                      INDEX `idx_factor_date` (`factor_name`, `trade_date`),
+                      
+
+                      CONSTRAINT `fk_factor_panel_to_metadata`
                         FOREIGN KEY (`factor_name`)
                         REFERENCES `factor_metadata` (`factor_name`)
-                        ON DELETE RESTRICT
-                        ON UPDATE CASCADE,
-                      -- === 关键性能优化：创建索引 ===
-                      -- 索引1: 针对“查询某只股票一段时间的多个因子”的场景进行优化
-                      INDEX `idx_stock_date` (`stock_code`, `trade_date`),
-                      -- 索引2: 针对“查询某个因子在某个截面日的所有股票”的场景进行优化 (非常重要！)
-                      INDEX `idx_factor_date` (`factor_name`, `trade_date`)
+                        ON DELETE RESTRICT  -- 不允许删除一个还在被引用的因子
+                        ON UPDATE CASCADE   -- 如果主表中的因子名称更新了，这张表也自动更新
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='因子面板数据表';
+
+
 '''
 
                     }

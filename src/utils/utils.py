@@ -7,7 +7,8 @@ from utils.commands_to_generate_sql_table import generator
 import pandas as pd
 from dotenv import load_dotenv
 import os
-from utils.show_func_name_utils import *
+from utils.decorators import *
+import tushare as ts
 
 
 def ensure_table_exists(engine, table_name: str, create_sql: str="", echo=False, df=pd.DataFrame()):
@@ -59,7 +60,29 @@ def ensure_table_exists(engine, table_name: str, create_sql: str="", echo=False,
         return True
 
 @output_controller
-def upsert_to_mysql(engine, table_name:str, df_uncleaned:pd.DataFrame, primary_key:list=['ts_code'],create_sql_command: str="", echo=False):
+def upsert_to_mysql(engine, table_name:str, df_uncleaned:pd.DataFrame, primary_key:list=['ts_code'],
+                    create_sql_command: str="", echo=False):
+    """
+    将 Pandas DataFrame 的数据批量“更新或插入”(Upsert)到 MySQL 数据库表中。
+
+    该函数通过构建原生 SQL `INSERT ... ON DUPLICATE KEY UPDATE` 语句，实现高效的数据同步。
+    它会自动处理 DataFrame 中的 `np.nan` 和 `pd.NaT`，将其转换成数据库中的 `NULL`。
+    整个操作在一个事务中执行，以确保数据写入的原子性。如果目标表不存在，
+    可以根据提供的SQL命令自动创建。
+
+    Args:
+        engine (sqlalchemy.engine.Engine): SQLAlchemy 的数据库引擎实例。
+        table_name (str): 目标数据库表的名称。
+        df_uncleaned (pd.DataFrame): 包含待写入数据的 Pandas DataFrame。
+        primary_key (list, optional): 用于判断重复记录的主键或唯一键列表。
+                                      默认为 ['ts_code']。
+        create_sql_command (str, optional): 如果表不存在时，用于创建表的 SQL DDL 语句。
+                                             默认为空字符串，即不尝试创建表。
+        echo (bool, optional): 是否在控制台打印执行信息。默认为 False。
+
+    Returns:
+        None: 该函数没有返回值。
+    """
     if df_uncleaned is None or df_uncleaned.empty:
         print("传入的DataFrame为空，操作已跳过。")
         return
@@ -68,7 +91,7 @@ def upsert_to_mysql(engine, table_name:str, df_uncleaned:pd.DataFrame, primary_k
     df = df_uncleaned.astype(object).where(pd.notnull(df_uncleaned), None)
     # 从 DataFrame 获取列名
     cols = [f"`{col}`" for col in df.columns]
-    print(cols)
+    # print(cols)
     cols_str = ", ".join(cols)
     # 构造 VALUES 部分的具名占位符
     placeholders = ", ".join(f":{col}" for col in df.columns)
@@ -114,3 +137,8 @@ def easyConnect() -> sqlalchemy.engine.base.Engine:
     return engine
 
 
+def easyPro() -> ts.pro.client.DataApi:
+    load_dotenv()
+    api_key = os.environ.get("API_KEY")
+    ts.set_token(api_key)
+    return ts.pro_api()

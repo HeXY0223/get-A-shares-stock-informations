@@ -1,0 +1,59 @@
+# src/pipelines/update_factor.py
+
+import sys
+from pathlib import Path
+
+# 将 src 目录添加到系统路径，以便导入自定义模块
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+# 从 factor_lab 中导入所有需要计算的因子类
+from factor_lab.momentum import Return12M, Alpha6M, RSI14
+
+
+# from factor_lab.value import PE, PB # 将来可以添加更多
+
+def run_factor_update(table_name:str="factor_panel_data", echo=False):
+    """
+    执行所有因子计算和数据同步的主函数。
+    """
+    # --- 配置区 ---
+    # 定义要计算的股票池和时间范围
+    TS_CODES = ['000001.SZ', '600519.SH', '300750.SZ']  # 示例股票池
+    START_DATE = '2024-01-01'
+    END_DATE = '2024-06-30'
+
+    # 将所有要运行的因子类放入一个列表中
+    factor_classes_to_run = [
+        Return12M,
+        Alpha6M,
+        RSI14,
+        # PE, # 即将实现
+        # PB,
+    ]
+
+    # --- 执行区 ---
+    for factor_cls in factor_classes_to_run:
+        try:
+            # 1. 实例化因子对象
+            # Alpha6M 有额外参数，需要特殊处理，接下来版本进行修改
+            factor_instance = factor_cls(
+                ts_codes=TS_CODES,
+                start_date=START_DATE,
+                end_date=END_DATE
+            )
+
+            # 2. 调用统一的保存方法
+            factor_instance.save_to_db(table_name=table_name, echo=echo)
+
+        except Exception as e:
+            # 增加错误处理，确保一个因子失败不会中断整个流程
+            print(f"!!! 计算或存储因子 {factor_cls.__name__} 时发生错误: {e}")
+            continue
+
+
+if __name__ == '__main__':
+    print("开始执行因子更新流程...")
+    run_factor_update(table_name="factor_panel_data", echo=True)
+    print("所有因子更新流程执行完毕。")
+
