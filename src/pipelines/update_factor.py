@@ -10,12 +10,13 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 # 从 factor_lab 中导入所有需要计算的因子类
 from factor_lab.momentum import Return12M, Alpha6M, RSI14
 
-
 from factor_lab.value import PE, PB, PS, DY, EVEBITDA
 
 from factor_lab.sentiment import ShareHolderNumCR, FinancingBalanceCR, AnalystRating, LonghuNetInflow
 
 from factor_lab.growth import Revenue, RevenueGR, CapExGR, GrossProfitGR, NetProfitGR
+
+from factor_lab.technical import MACD, BollingerBandWidth
 # 将来可以添加更多
 
 def run_factor_update(table_name:str="factor_panel_data", echo=False):
@@ -46,11 +47,13 @@ def run_factor_update(table_name:str="factor_panel_data", echo=False):
         # FinancingBalanceCR,
         # AnalystRating # 积分不够 高频访问不了 lol
         # LonghuNetInflow # 贼慢！
-        Revenue,
-        RevenueGR,
-        CapExGR,
-        GrossProfitGR,
-        NetProfitGR
+        # Revenue,
+        # RevenueGR,
+        # CapExGR,
+        # GrossProfitGR,
+        # NetProfitGR,
+        MACD,
+        BollingerBandWidth
     ]
 
     # --- 执行区 ---
