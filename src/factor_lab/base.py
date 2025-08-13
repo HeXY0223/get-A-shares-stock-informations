@@ -3,9 +3,8 @@
 import abc
 import pandas as pd
 from sqlalchemy.engine import Engine
-
-# 假设你的数据库工具函数位于 src/utils/utils.py
 from utils.utils import easyConnect, upsert_to_mysql
+import numpy as np
 
 
 class FactorBase(abc.ABC):
@@ -113,3 +112,140 @@ class FactorBase(abc.ABC):
         )
         print(f"因子 {self.factor_name} 数据同步完成。")
 
+    def calculate_period_change_rate(self, data: pd.DataFrame, periods: int = 1,
+                                     use_abs_denominator: bool = False) -> pd.DataFrame:
+        """
+        计算期间变化率：(本期值 - 上期值) / 上期值 或 (本期值 - 上期值) / |上期值|
+
+        适用于计算各种财务指标的同比/环比变化率，如：
+        - 股东户数变化率
+        - 融资余额变化率
+        - 净利润变化率
+        - 毛利润变化率
+        - 营业收入变化率
+        - 购建固定资产现金支出变化率等
+
+        Args:
+            data (pd.DataFrame): 原始数据，index为日期，columns为股票代码
+            periods (int): 期间间隔，默认为1（上一期）
+            use_abs_denominator (bool): 是否对分母取绝对值，默认False
+                                      - False: (本期 - 上期) / 上期
+                                      - True:  (本期 - 上期) / |上期|
+
+        Returns:
+            pd.DataFrame: 计算后的变化率数据，格式与输入数据相同
+
+        Examples:
+            # 股东户数变化率（不取绝对值）
+            shareholder_change = self.calculate_period_change_rate(shareholder_data, periods=1, use_abs_denominator=False)
+
+            # 净利润变化率（分母取绝对值）
+            profit_change = self.calculate_period_change_rate(profit_data, periods=1, use_abs_denominator=True)
+        """
+        if data.empty:
+            return pd.DataFrame()
+
+        # 确保数据按日期排序
+        data_sorted = data.sort_index()
+
+        # 计算上期值
+        previous_data = data_sorted.shift(periods)
+
+        # 计算分子：本期 - 上期
+        numerator = data_sorted - previous_data
+
+        # 计算分母：上期值或|上期值|
+        denominator = previous_data.abs() if use_abs_denominator else previous_data
+
+        # 计算变化率，避免除零
+        change_rate = numerator / denominator
+
+        # 处理无穷大和NaN值
+        change_rate = change_rate.replace([np.inf, -np.inf], np.nan)
+
+        return change_rate
+
+
+    def calculate_period_change_rate_from_long_data(self, data: pd.DataFrame,
+                                                    value_col: str,
+                                                    date_col: str = 'trade_date',
+                                                    ts_code_col: str = 'ts_code',
+                                                    periods: int = 1,
+                                                    use_abs_denominator: bool = False) -> pd.DataFrame:
+        """
+        从长格式（窄表）数据计算期间变化率：(本期值 - 上期值) / 上期值 或 (本期值 - 上期值) / |上期值|
+
+        适用于处理包含ts_code, end_date, value列的长格式数据，如：
+        - 股东户数变化率
+        - 融资余额变化率
+        - 净利润变化率等
+
+        Args:
+            data (pd.DataFrame): 长格式原始数据，包含ts_code, date, value列
+            value_col (str): 数值列名
+            date_col (str): 日期列名，默认'trade_date'
+            ts_code_col (str): 股票代码列名，默认'ts_code'
+            periods (int): 期间间隔，默认为1（上一期）
+            use_abs_denominator (bool): 是否对分母取绝对值，默认False
+
+        Returns:
+            pd.DataFrame: 包含ts_code, end_date, change_rate列的计算结果
+
+        Examples:
+            # 股东户数变化率
+            result = self.calculate_period_change_rate_from_long_data(
+                data=shareholder_df,
+                date_col='end_date',
+                value_col='holder_num',
+                use_abs_denominator=False
+            )
+        """
+        if data.empty:
+            return pd.DataFrame(columns=[ts_code_col, date_col, 'change_rate'])
+
+        # 确保日期列为datetime类型
+        data = data.copy()
+        data[date_col] = pd.to_datetime(data[date_col])
+
+        # 按股票代码和日期排序
+        data_sorted = data.sort_values([ts_code_col, date_col])
+
+        # 按股票代码分组计算变化率
+        result_list = []
+
+        for ts_code, group in data_sorted.groupby(ts_code_col):
+            # 对每个股票的数据按日期排序
+            group_sorted = group.sort_values(date_col).reset_index(drop=True)
+
+            # 计算上期值
+            group_sorted['previous_value'] = group_sorted[value_col].shift(periods)
+
+            # 计算分子：本期 - 上期
+            numerator = group_sorted[value_col] - group_sorted['previous_value']
+
+            # 计算分母：上期值或|上期值|
+            denominator = group_sorted['previous_value'].abs() if use_abs_denominator else group_sorted['previous_value']
+
+            # 计算变化率，避免除零
+            change_rate = numerator / denominator
+
+            # 处理无穷大和NaN值
+            change_rate = change_rate.replace([np.inf, -np.inf], np.nan)
+
+            # 构建结果
+            result_df = pd.DataFrame({
+                ts_code_col: ts_code,
+                date_col: group_sorted[date_col],
+                'change_rate': change_rate
+            })
+
+            result_list.append(result_df)
+
+        # 合并所有结果
+        if result_list:
+            final_result = pd.concat(result_list, ignore_index=True)
+            # 删除NaN行（通常是每个股票的第一行，因为没有上期数据）
+            final_result = final_result.dropna(subset=['change_rate'])
+            return final_result
+        else:
+            return pd.DataFrame(columns=[ts_code_col, date_col, 'change_rate'])

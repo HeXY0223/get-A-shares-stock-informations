@@ -12,6 +12,8 @@ from factor_lab.momentum import Return12M, Alpha6M, RSI14
 
 
 from factor_lab.value import PE, PB, PS, DY, EVEBITDA
+
+from factor_lab.sentiment import ShareHolderNumCR, FinancingBalanceCR, AnalystRating, LonghuNetInflow
 # 将来可以添加更多
 
 def run_factor_update(table_name:str="factor_panel_data", echo=False):
@@ -24,16 +26,24 @@ def run_factor_update(table_name:str="factor_panel_data", echo=False):
     START_DATE = '2024-01-01'
     END_DATE = '2024-06-30'
 
+    # TS_CODES = ['000592.SZ'] #龙虎榜测试专用
+    # START_DATE = '2021-05-15'
+    # END_DATE = '2021-06-15'
+
     # 将所有要运行的因子类放入一个列表中
     factor_classes_to_run = [
-        Return12M,
-        Alpha6M,
-        RSI14,
-        PE,
-        PB,
-        PS,
-        DY,
-        EVEBITDA
+        # Return12M,
+        # Alpha6M,
+        # RSI14,
+        # PE,
+        # PB,
+        # PS,
+        # DY,
+        # EVEBITDA,
+        # ShareHolderNumCR,
+        # FinancingBalanceCR,
+        # AnalystRating # 积分不够 高频访问不了 lol
+        # LonghuNetInflow # 贼慢！
     ]
 
     # --- 执行区 ---

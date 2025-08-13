@@ -190,7 +190,7 @@ class EVEBITDA(FactorBase):
         market_cap = market_cap.sort_index()
 
         # 2. 获取季度财务数据
-        fin_start_date = (pd.to_datetime(self.start_date) - pd.DateOffset(months=15)).strftime('%Y-%m-%d')
+        fin_start_date = (pd.to_datetime(self.start_date) - pd.DateOffset(months=6)).strftime('%Y-%m-%d')
 
         # 获取EBITDA
         fina_indicator = get_financial_data(self.ts_codes, fin_start_date, 'fina_indicator')
