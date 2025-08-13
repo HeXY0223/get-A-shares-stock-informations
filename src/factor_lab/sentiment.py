@@ -79,7 +79,7 @@ class FinancingBalanceCR(FactorBase):
 
     def calculate(self) -> pd.DataFrame:
         real_start_date = (pd.to_datetime(self.start_date) - pd.DateOffset(days=8)).strftime('%Y-%m-%d')
-        financing_balance = get_sentiment_data(self.ts_codes, self.start_date, self.end_date, report_type='financing_balance')
+        financing_balance = get_sentiment_data(self.ts_codes, real_start_date, self.end_date, report_type='financing_balance')
         financing_balance.drop_duplicates(subset=['ts_code', 'trade_date'], keep='last', inplace=True)
 
         financing_balanceCR = self.calculate_period_change_rate_from_long_data(data=financing_balance,
@@ -104,7 +104,7 @@ class AnalystRating(FactorBase):
         analyst_rating.drop(columns=['report_title'], inplace=True)
         analyst_rating.reindex(columns='trade_date')
         ar_list = []
-        quarter_starts, quarter_ends = []
+        quarter_starts, quarter_ends = [], []
         for year in range(self.start_date.year, self.end_date.year + 1):
             tempstart, tempend = get_quarter_dates(year)
             quarter_starts.extend(tempstart)
@@ -117,7 +117,6 @@ class AnalystRating(FactorBase):
                 '买入' : 1,
                 '买进': 1,
                 '优于大市': 1,
-                '买进': 1,
                 '区间操作': -1,
                 '增持': 1,
                 '强推': 2,
