@@ -5,6 +5,8 @@ import numpy as np
 from .base import FactorBase
 from utils.utils import easyPro, easyConnect
 import tushare as ts
+from utils.logger_config import app_logger as logger
+from loguru import logger
 
 def get_daily_trading_data(ts_codes: list[str], start_date: str, end_date: str, turnover = 'turnover_rate') -> pd.DataFrame:
     """
@@ -18,13 +20,13 @@ def get_daily_trading_data(ts_codes: list[str], start_date: str, end_date: str, 
     - amount: 成交额（千元）
     - pct_chg: 涨跌幅（%）
     """
-    print(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的交易数据...")
+    logger.trace(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的交易数据...")
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
     pro = easyPro()
     all_data = []
     if turnover not in ['turnover_rate', 'turnover_rate_f']:
-        print("换手率传入参数应为turnover_rate或turnover_rate_f,后者为换手率（自由流通股）。已自动更改为turnover_rate")
+        logger.info("换手率传入参数应为turnover_rate或turnover_rate_f,后者为换手率（自由流通股）。已自动更改为turnover_rate")
         turnover = 'turnover_rate'
     for code in ts_codes:
         # 模拟交易数据

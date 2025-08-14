@@ -8,9 +8,11 @@ from data_fetchers.stock_daily_fetcher import upsert_daily_markets  # 假设此�
 from datetime import datetime, timedelta
 import os
 import numpy as np
+from utils.logger_config import app_logger as logger
+from loguru import logger
 
-
-def update_stock_daily(engine, table_name: str, echo=False):
+@logger.catch()
+def update_stock_daily(engine, table_name: str):
     """
     更新股票日线数据，包括增量更新和因复权因子变化而进行的全量修正。
     """
@@ -31,14 +33,14 @@ def update_stock_daily(engine, table_name: str, echo=False):
     """
     stock_dates_df = pd.read_sql(sql_query, engine)
     if stock_dates_df.empty:
-        print(f"数据表 {table_name} 为空，无法继续更新。")
+        logger.warning(f"数据表 {table_name} 为空，无法继续更新。")
         return
 
     stock_dates_df['oldest_date'] = pd.to_datetime(stock_dates_df['oldest_date'], format='%Y%m%d')
     stock_dates_df['latest_date'] = pd.to_datetime(stock_dates_df['latest_date'], format='%Y%m%d')
 
     all_ts_codes = stock_dates_df['ts_code'].unique()
-    print(f"数据库中共有 {len(all_ts_codes)} 只股票。")
+    logger.info(f"数据库中共有 {len(all_ts_codes)} 只股票。")
 
     # --- 第一部分：增量更新日线数据 ---
     date_today_str = datetime.now().strftime('%Y%m%d')
@@ -49,9 +51,9 @@ def update_stock_daily(engine, table_name: str, echo=False):
     active_stocks_df = stock_dates_df[stock_dates_df['latest_date'].dt.date >= cutoff_date].copy()
     available_ts_codes = active_stocks_df['ts_code'].tolist()
 
-    print(f"识别出 {len(available_ts_codes)} 只活跃股票进行增量更新。")
+    logger.info(f"识别出 {len(available_ts_codes)} 只活跃股票进行增量更新。")
 
-    print("开始进行增量数据更新...")
+    logger.info("开始进行增量数据更新...")
     grouped = active_stocks_df.groupby('latest_date')
     for latest_date, group in grouped:
         start_date_obj = latest_date.date() + timedelta(days=1)
@@ -60,16 +62,16 @@ def update_stock_daily(engine, table_name: str, echo=False):
             start_date_str = start_date_obj.strftime('%Y%m%d')
             ts_codes_to_update = group['ts_code'].tolist()
 
-            print(f"批量更新 {len(ts_codes_to_update)} 只股票，日期范围: {start_date_str} -> {date_today_str}")
+            logger.info(f"批量更新 {len(ts_codes_to_update)} 只股票，日期范围: {start_date_str} -> {date_today_str}")
             upsert_daily_markets(engine=engine, ts_codes=ts_codes_to_update, start_date=start_date_str,
                                  end_date=date_today_str,
-                                 table_name=table_name, echo=echo)
+                                 table_name=table_name)
 
-    print("增量数据更新完成。")
+    logger.info("增量数据更新完成。")
 
     # --- 第二部分：检查并修正因复权因子变化导致的数据不一致 ---
 
-    print("开始检查复权因子变化...")
+    logger.info("开始检查复权因子变化...")
     stock_dates_dict = {row['ts_code']: {'oldest_date': row['oldest_date'].strftime('%Y%m%d'),
                                          'latest_date': row['latest_date'].strftime('%Y%m%d')} for _, row in
                         active_stocks_df.iterrows()}
@@ -91,7 +93,7 @@ def update_stock_daily(engine, table_name: str, echo=False):
         db_adj_factors_list.append(pd.read_sql(sql_adj_factor_query, engine))
 
     if not db_adj_factors_list:
-        print("未能从数据库获取任何复权因子信息，跳过检查。")
+        logger.warning("未能从数据库获取任何复权因子信息，跳过检查。")
         qfq_changed_ts_codes = []
     else:
         db_adj_factor_df = pd.concat(db_adj_factors_list, ignore_index=True)
@@ -99,7 +101,7 @@ def update_stock_daily(engine, table_name: str, echo=False):
             db_adj_factor_df.rename(columns={'adj_factor': 'adj_factor_db'}, inplace=True)
             db_adj_factor_df.set_index('ts_code', inplace=True)
         else:
-            print("警告: 从数据库返回的数据中未找到 'adj_factor' 列。")
+            logger.warning("警告: 从数据库返回的数据中未找到 'adj_factor' 列。")
             db_adj_factor_df = pd.DataFrame()
 
         # ######################################################################## #
@@ -107,7 +109,7 @@ def update_stock_daily(engine, table_name: str, echo=False):
         # ######################################################################## #
 
         # 核心逻辑：比较我们数据库中存储的旧复权因子，和Tushare现在为同一天提供的复权因子是否一致
-        print("正在从 Tushare 获取最新的历史复权因子进行比对...")
+        logger.info("正在从 Tushare 获取最新的历史复权因子进行比对...")
 
         # 1. 创建一个从 a latest_date -> [ts_code_list] 的映射，方便按天查询
         date_to_codes_map = active_stocks_df.groupby(active_stocks_df['latest_date'].dt.strftime('%Y%m%d'))[
@@ -124,7 +126,7 @@ def update_stock_daily(engine, table_name: str, echo=False):
                     filtered_df = daily_factors_df[daily_factors_df['ts_code'].isin(codes_for_date)]
                     ts_adj_factors_list.append(filtered_df)
             except Exception as e:
-                print(f"获取 {trade_date} 的复权因子时出错: {e}")
+                logger.error(f"获取 {trade_date} 的复权因子时出错: {e}")
 
         # 3. 合并所有从Tushare查询到的结果
         if ts_adj_factors_list:
@@ -133,10 +135,10 @@ def update_stock_daily(engine, table_name: str, echo=False):
                 ts_adj_factor_df.rename(columns={'adj_factor': 'adj_factor_ts'}, inplace=True)
                 ts_adj_factor_df.set_index('ts_code', inplace=True)
             else:
-                print("警告: 从Tushare API(adj_factor)返回的数据中未找到 'adj_factor' 列。")
+                logger.warning("警告: 从Tushare API(adj_factor)返回的数据中未找到 'adj_factor' 列。")
                 ts_adj_factor_df = pd.DataFrame()
         else:
-            print("未能从Tushare获取任何用于比对的复权因子。")
+            logger.warning("未能从Tushare获取任何用于比对的复权因子。")
             ts_adj_factor_df = pd.DataFrame()
 
         # ######################################################################## #
@@ -158,10 +160,10 @@ def update_stock_daily(engine, table_name: str, echo=False):
             qfq_changed_ts_codes = []
 
     if not qfq_changed_ts_codes:
-        print("没有检测到复权因子发生变化的股票。")
+        logger.info("没有检测到复权因子发生变化的股票。")
     else:
-        print(f"检测到 {len(qfq_changed_ts_codes)} 只股票的复权因子发生变化，将刷新其全部历史数据。")
-        print(qfq_changed_ts_codes)
+        logger.info(f"检测到 {len(qfq_changed_ts_codes)} 只股票的复权因子发生变化，将刷新其全部历史数据。")
+        logger.debug(qfq_changed_ts_codes)
 
         curr_qfq_data_list = []
         for ts_code in qfq_changed_ts_codes:
@@ -172,17 +174,17 @@ def update_stock_daily(engine, table_name: str, echo=False):
                 curr_qfq_data_list.append(curr_qfq_each)
 
         if curr_qfq_data_list:
-            print("正在合并并更新全历史前复权数据...")
+            logger.info("正在合并并更新全历史前复权数据...")
             curr_qfq_data = pd.concat(curr_qfq_data_list, ignore_index=True)
             curr_qfq_data.rename(
                 columns={'open': 'open_qfq', 'high': 'high_qfq', 'low': 'low_qfq', 'close': 'close_qfq',
                          'pre_close': 'pre_close_qfq', 'change': 'price_change_qfq'}, inplace=True)
 
             upsert_to_mysql(engine=engine, table_name=table_name, df_uncleaned=curr_qfq_data,
-                            primary_key=['ts_code', 'trade_date'], echo=echo)
-            print("全历史前复权数据更新完成。")
+                            primary_key=['ts_code', 'trade_date'])
+            logger.info("全历史前复权数据更新完成。")
 
-    print("所有更新任务执行完毕。")
+    logger.info("所有更新任务执行完毕。")
 
 
 if __name__ == '__main__':
@@ -190,4 +192,4 @@ if __name__ == '__main__':
         db_engine = easyConnect()
         update_stock_daily(engine=db_engine, table_name="stock_daily_electronic_information")
     except Exception as e:
-        print(f"程序执行出错: {e}")
+        logger.error(f"程序执行出错: {e}")

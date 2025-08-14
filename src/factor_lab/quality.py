@@ -4,7 +4,8 @@ import pandas as pd
 import numpy as np
 from .base import FactorBase
 from utils.utils import easyPro
-
+from utils.logger_config import app_logger as logger
+from loguru import logger
 
 def get_financial_data(ts_codes: list[str], start_date: str, end_date: str) -> pd.DataFrame:
     """
@@ -22,7 +23,7 @@ def get_financial_data(ts_codes: list[str], start_date: str, end_date: str) -> p
     - accounts_receiv: 应收账款
     - n_cashflow_act: 经营活动现金流量净额
     """
-    print(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的财务数据...")
+    logger.trace(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的财务数据...")
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
     pro = easyPro()
@@ -75,7 +76,7 @@ def get_financial_data(ts_codes: list[str], start_date: str, end_date: str) -> p
             all_data.append(merged_df)
 
         except Exception as e:
-            print(f"获取股票 {code} 数据失败: {str(e)}")
+            logger.error(f"获取股票 {code} 数据失败: {str(e)}")
             continue
 
     # 合并所有股票数据
@@ -102,7 +103,7 @@ def get_daily_basic(ts_codes: list[str], start_date: str, end_date: str) -> pd.D
     - pb: 市净率
     - total_mv: 总市值
     """
-    print(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的财务数据...")
+    logger.trace(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的财务数据...")
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
     pro = easyPro()

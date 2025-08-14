@@ -5,8 +5,10 @@ import pandas as pd
 from sqlalchemy.engine import Engine
 from utils.utils import easyConnect, upsert_to_mysql
 import numpy as np
+from utils.logger_config import app_logger as logger
+from loguru import logger
 
-
+@logger.catch()
 class FactorBase(abc.ABC):
     """
     因子计算抽象基类
@@ -72,19 +74,19 @@ class FactorBase(abc.ABC):
         # 调整列序以匹配数据库表结构
         return narrow_df[['ts_code', 'trade_date', 'factor_name', 'factor_value']]
 
-    def save_to_db(self, table_name:str="", create_sql:str="", echo=False):
+    def save_to_db(self, table_name:str="", create_sql:str=""):
         """
         执行因子计算并将结果保存到数据库。
 
         这是一个完整的“计算到存储”的流程。
         """
-        print(f"开始计算因子: {self.factor_name}...")
+        logger.debug(f"开始计算因子: {self.factor_name}...")
 
         # 1. 执行计算
         wide_factor_values = self.calculate()
 
         if wide_factor_values.empty:
-            print(f"因子 {self.factor_name} 计算结果为空，跳过入库。")
+            logger.warning(f"因子 {self.factor_name} 计算结果为空，跳过入库。")
             return
 
         # 2. 转换为窄表
@@ -94,10 +96,10 @@ class FactorBase(abc.ABC):
         narrow_factor_values.dropna(subset=['factor_value'], inplace=True)
 
         if narrow_factor_values.empty:
-            print(f"因子 {self.factor_name} 清洗后结果为空，跳过入库。")
+            logger.warning(f"因子 {self.factor_name} 清洗后结果为空，跳过入库。")
             return
 
-        print(f"计算完成，准备将 {len(narrow_factor_values)} 条数据写入数据库...")
+        logger.debug(f"计算完成，准备将 {len(narrow_factor_values)} 条数据写入数据库...")
 
         # 4. 调用 upsert 函数写入数据库
         # 注意：对于因子值表，主键应当是 ts_code, trade_date 和 factor_name 的组合，
@@ -108,9 +110,8 @@ class FactorBase(abc.ABC):
             df_uncleaned=narrow_factor_values,
             primary_key=['ts_code', 'trade_date', 'factor_name'],
             create_sql_command=create_sql,
-            echo=echo
         )
-        print(f"因子 {self.factor_name} 数据同步完成。")
+        logger.info(f"因子 {self.factor_name} 数据同步完成。")
 
     def calculate_period_change_rate(self, data: pd.DataFrame, periods: int = 1,
                                      use_abs_denominator: bool = False) -> pd.DataFrame:

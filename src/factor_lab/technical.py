@@ -5,8 +5,10 @@ import numpy as np
 from .base import FactorBase
 from utils.utils import easyPro
 import tushare as ts
+from utils.logger_config import app_logger as logger
+from loguru import logger
 
-def get_daily_data(ts_codes: list[str], start_date: str, end_date: str) -> pd.DataFrame:
+def get_technical_data(ts_codes: list[str], start_date: str, end_date: str) -> pd.DataFrame:
     """
     获取日线行情数据的示例函数 (占位符)。
 
@@ -17,7 +19,7 @@ def get_daily_data(ts_codes: list[str], start_date: str, end_date: str) -> pd.Da
     - volume: 成交量 (用于某些技术指标)
     """
 
-    print(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的数据... (此为模拟数据)")
+    logger.trace(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的数据... (此为模拟数据)")
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
     all_data = []
@@ -51,7 +53,7 @@ class MACD(FactorBase):
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(days=120)).strftime('%Y-%m-%d')
 
         # 获取复权收盘价数据
-        daily_data = get_daily_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = get_technical_data(self.ts_codes, start_dt_extended, self.end_date)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
 
         # 计算12日EMA和26日EMA
@@ -100,7 +102,7 @@ class BollingerBandWidth(FactorBase):
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(days=60)).strftime('%Y-%m-%d')
 
         # 获取复权收盘价数据
-        daily_data = get_daily_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = get_technical_data(self.ts_codes, start_dt_extended, self.end_date)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
 
         # 计算20日移动平均线（中轨）
@@ -142,7 +144,7 @@ class MACD_Signal(FactorBase):
     def calculate(self) -> pd.DataFrame:
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(days=120)).strftime('%Y-%m-%d')
 
-        daily_data = get_daily_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = get_technical_data(self.ts_codes, start_dt_extended, self.end_date)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
 
         # 先计算MACD线
@@ -172,7 +174,7 @@ class MACD_Histogram(FactorBase):
     def calculate(self) -> pd.DataFrame:
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(days=120)).strftime('%Y-%m-%d')
 
-        daily_data = get_daily_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = get_technical_data(self.ts_codes, start_dt_extended, self.end_date)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
 
         # 计算MACD线

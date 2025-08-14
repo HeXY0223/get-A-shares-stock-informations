@@ -1,8 +1,24 @@
 # A股信息访问与存储项目
+## A-Share Information Access and Storage Project
 
 ## 项目简介
 
 本项目旨在帮助用户通过 Tushare API 轻松访问A股市场数据，并将其存储到 MySQL 数据库中。该项目提供了一个简洁的框架，方便开发者快速集成和扩展A股数据处理功能。目前项目处于初期开发阶段，仅实现了核心功能，后续将逐步完善。
+
+* **25/08/11 ~ 25/08/14更新**： 
+  * 现在数据库支持实时更新！只需要运行`src/pipelines/update.py`即可~
+  * 新添加了因子的计算与存储，它们在`src/factor_lab`文件夹下面；要运行批量因子计算，请运行`src/pipelines/update_factor.py`
+  * 采用了更好的日志记录方式——loguru，现在你可以在logs文件夹下面查看日志
+
+
+* **Updates on 25/08/11 ~ 25/08/14:**
+
+  * The database now supports real-time updates! Simply run `src/pipelines/update.py` to trigger it.
+
+   * Added calculation and storage of new factors, located in the `src/factor_lab` folder.
+   
+   * Implemented better logging with loguru—now you can check logs in the `logs` folder.
+
 
 ## 快速上手
 
@@ -40,7 +56,17 @@
 
 ## 项目现状与未来计划
 
-* **当前状态**：项目初步构建，仅在 `demo.py` 中实现了少量函数，用于演示 Tushare API 的调用和 MySQL 数据存储。
+
+* **25/08/11 ~ 25/08/14更新**： 
+  * 现在数据库支持实时更新！只需要运行`src/pipelines/update.py`即可~
+  * 新添加了因子的计算与存储，它们在`src/factor_lab`文件夹下面；要运行批量因子计算，请运行`src/pipelines/update_factor.py`
+  * 采用了更好的日志记录方式——loguru，现在你可以在logs文件夹下面查看日志
+
+
+* **25/08/04 ~ 25/08/08更新**：
+  * 项目初步构建，在 `src/demo.py` 中实现了少量函数，用于演示 Tushare API 的调用和 MySQL 数据存储。
+
+
 * **未来更新**：计划逐步添加更多功能，如数据查询优化、批量处理、数据分析模块等。欢迎贡献代码或提出建议！
 
 ## 注意事项
@@ -91,9 +117,19 @@ This project uses Python 3.11. It is recommended to use Conda or a virtual envir
 
 ## Project Status and Future Plans
 
-* **Current Status**: The project is initially built, with only a few functions implemented in `demo.py` to demonstrate Tushare API calls and MySQL data storage.
-* **Future Updates**: Plans to gradually add more features, such as data query optimization, batch processing, data analysis modules, etc. Contributions of code or suggestions are welcome!
+* **Updates on 25/08/11 ~ 25/08/14:**
 
+  * The database now supports real-time updates! Simply run `src/pipelines/update.py` to trigger it.
+
+   * Added calculation and storage of new factors, located in the `src/factor_lab` folder.
+   
+   * Implemented better logging with loguru—now you can check logs in the `logs` folder.
+
+* **Updates on 25/08/04 ~ 25/08/08:**
+
+   * Initial project setup. A few functions were implemented in `src/demo.py` to demonstrate Tushare API calls and MySQL data storage.
+
+**Future Updates:** Planning to gradually add more features, such as query optimization, batch processing, and data analysis modules. Contributions and suggestions are welcome!
 ## Notes
 
 * Ensure that the Tushare Token is valid and the MySQL database is properly set up.

@@ -8,7 +8,7 @@ from utils.utils import *
 from tqdm import tqdm
 import time
 
-def get_index_daily(ts_code:str="", start_date:str='20200806', end_date:str='20250806', strategy:str='conservative', echo=False):
+def get_index_daily(ts_code:str="", start_date:str='20200806', end_date:str='20250806', strategy:str='conservative'):
     load_dotenv()
     api_key = os.environ.get("API_KEY")
     ts.set_token(api_key)
@@ -16,28 +16,27 @@ def get_index_daily(ts_code:str="", start_date:str='20200806', end_date:str='202
     try:
         index_data = pro.index_daily(ts_code=ts_code, start_date=start_date, end_date=end_date)
         if index_data.empty:
-            if echo: print(f"无法访问代码为{ts_code}的股票，跳过。")
+            logger.warning(f"无法访问代码为{ts_code}的股票，跳过。")
             return pd.DataFrame()
         return index_data
     except Exception as e:
-        if echo:
-            print(f"get_index_daily出现错误:{e}")
+        logger.error(f"get_index_daily出现错误:{e}")
         return pd.DataFrame()
 
 
 def upsert_index_daily(engine, ts_codes:list=[],
                          start_date:str='20200806', end_date:str='20250806',
                          strategy:str='conservative', table_name='index_daily',
-                         create_sql_command:str='USE DEFAULT index_daily', echo:bool=False):
+                         create_sql_command:str='USE DEFAULT index_daily'):
     # 如果数据太多，分配处理，每 step次访问一组，免得出问题
     step = 5
     for i in tqdm(range(0,len(ts_codes),step), desc="fetch & saving data"):
         df_uncleaned_list = []
         for each_index in ts_codes[i:i + step]:
-            df_uncleaned_list.append(get_index_daily(each_index, start_date, end_date, strategy, echo))
+            df_uncleaned_list.append(get_index_daily(each_index, start_date, end_date, strategy))
         df_uncleaned = pd.concat(df_uncleaned_list, ignore_index=True)
         primary_key = ['ts_code', 'trade_date']  # 根据表结构，主键是 ts_code和 trade_date
-        upsert_to_mysql(engine, table_name, df_uncleaned, primary_key, create_sql_command, echo)
+        upsert_to_mysql(engine, table_name, df_uncleaned, primary_key, create_sql_command)
         time.sleep(3)
 
 

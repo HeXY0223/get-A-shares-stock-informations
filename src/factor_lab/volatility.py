@@ -5,6 +5,8 @@ import numpy as np
 from .base import FactorBase
 from utils.utils import easyPro, easyConnect
 import tushare as ts
+from utils.logger_config import app_logger as logger
+from loguru import logger
 
 def get_daily_data(ts_codes: list[str], start_date: str, end_date: str) -> pd.DataFrame:
     """
@@ -16,7 +18,7 @@ def get_daily_data(ts_codes: list[str], start_date: str, end_date: str) -> pd.Da
     - amount: 成交额
     """
 
-    print(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的数据...")
+    logger.trace(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的数据...")
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
     pro = easyPro()
@@ -38,7 +40,7 @@ def get_index_daily_data(index_codes: list[str], start_date: str, end_date: str)
     - close: 收盘价
     """
 
-    print(f"正在获取 {len(index_codes)} 个指数从 {start_date} 到 {end_date} 的数据...")
+    logger.trace(f"正在获取 {len(index_codes)} 个指数从 {start_date} 到 {end_date} 的数据...")
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
     pro = easyPro()
@@ -197,7 +199,7 @@ class BetaValue(FactorBase):
         index_codes = [code for code in index_codes if code is not None]
 
         if not index_codes:
-            print("警告：没有找到有效的行业指数代码")
+            logger.warning("警告：没有找到有效的行业指数代码")
             return pd.DataFrame()
 
         # 3. 获取个股复权收盘价
@@ -220,11 +222,11 @@ class BetaValue(FactorBase):
             corresponding_index = stock_to_index.get(stock_code)
 
             if corresponding_index is None or corresponding_index not in index_prices.columns:
-                print(f"警告：股票 {stock_code} 没有找到对应的行业指数，跳过")
+                logger.warning(f"警告：股票 {stock_code} 没有找到对应的行业指数，跳过")
                 continue
 
             if stock_code not in stock_returns.columns:
-                print(f"警告：股票 {stock_code} 没有价格数据，跳过")
+                logger.warning(f"警告：股票 {stock_code} 没有价格数据，跳过")
                 continue
 
             # 获取该股票和对应指数的收益率序列
@@ -251,7 +253,7 @@ class BetaValue(FactorBase):
             beta_results.append(stock_beta)
 
         if not beta_results:
-            print("警告：没有成功计算任何股票的Beta值")
+            logger.warning("警告：没有成功计算任何股票的Beta值")
             return pd.DataFrame()
 
         # 7. 合并所有股票的Beta值

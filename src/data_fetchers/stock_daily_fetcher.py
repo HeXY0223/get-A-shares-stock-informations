@@ -7,8 +7,11 @@ from dotenv import load_dotenv
 from utils.utils import *
 from tqdm import tqdm
 import time
+from utils.logger_config import app_logger as logger
+from loguru import logger
 
-def get_stock_daily(ts_code:list=[], start_date:str='20200806', end_date:str='20250806', strategy:str='conservative', echo=False):
+@logger.catch()
+def get_stock_daily(ts_code:list=[], start_date:str='20200806', end_date:str='20250806', strategy:str='conservative'):
     load_dotenv()
     api_key = os.environ.get("API_KEY")
     ts.set_token(api_key)
@@ -28,7 +31,7 @@ def get_stock_daily(ts_code:list=[], start_date:str='20200806', end_date:str='20
             if cq_data.empty or qfq_data.empty or hfq_data.empty or adjfactor_data.empty:
                 # 先看看这股票叫啥
                 name = pro.index_member_all(ts_code=each_code)['name'][0]
-                if echo: print(f"无法访问到{name}(股票代码:{each_code})。这可能是因为该股票IPO终止，或者退市过早。")
+                logger.warning(f"无法访问到{name}(股票代码:{each_code})。这可能是因为该股票IPO终止，或者退市过早。")
                 cannot_access = True
                 break
             # 重命名除权&复权字段
@@ -47,12 +50,12 @@ def get_stock_daily(ts_code:list=[], start_date:str='20200806', end_date:str='20
         if cannot_access:
             continue
         if nan_count == 3:
-            print(f"已经尝试访问股票代码为{each_code}的股票3遍，仍有空值。")
+            logger.warning(f"已经尝试访问股票代码为{each_code}的股票3遍，仍有空值。")
             if strategy == 'conservative':
-                print("采取保守策略(strategy=conservative)，数据不入库。")
+                logger.warning("采取保守策略(strategy=conservative)，数据不入库。")
                 continue
             elif strategy == 'aggressive':
-                print("采取激进策略(strategy=aggressive)，数据入库。")
+                logger.warning("采取激进策略(strategy=aggressive)，数据入库。")
             else:
                 raise ValueError(f"无效的strategy参数: {strategy}。")
         merged_list.append(merged)
@@ -63,19 +66,23 @@ def get_stock_daily(ts_code:list=[], start_date:str='20200806', end_date:str='20
         return pd.DataFrame()
 
 
-
+@logger.catch()
 def upsert_daily_markets(engine, ts_codes:list=[],
                          start_date:str='20200806', end_date:str='20250806',
                          strategy:str='conservative', table_name='stock_daily',
-                         create_sql_command:str='USE DEFAULT stock_daily', echo:bool=False):
+                         create_sql_command:str='USE DEFAULT stock_daily'):
     # 如果数据太多，分配处理，每 step次访问一组，免得出问题
-    step = 5
-    for i in tqdm(range(0,len(ts_codes),step), desc="fetch & saving data"):
-        df_uncleaned = get_stock_daily(ts_codes[i:i + step], start_date, end_date, strategy, echo)
+    if len(ts_codes) > 20:
+        step = 5
+        for i in tqdm(range(0,len(ts_codes),step), desc="fetch & saving data"):
+            df_uncleaned = get_stock_daily(ts_codes[i:i + step], start_date, end_date, strategy)
+            primary_key = ['ts_code', 'trade_date']  # 根据表结构，主键是 ts_code和 trade_date
+            upsert_to_mysql(engine, table_name, df_uncleaned, primary_key, create_sql_command)
+            time.sleep(1)
+    else:
+        df_uncleaned = get_stock_daily(ts_codes, start_date, end_date, strategy)
         primary_key = ['ts_code', 'trade_date']  # 根据表结构，主键是 ts_code和 trade_date
-        upsert_to_mysql(engine, table_name, df_uncleaned, primary_key, create_sql_command, echo)
-        time.sleep(1)
-
+        upsert_to_mysql(engine, table_name, df_uncleaned, primary_key, create_sql_command)
 if __name__ == '__main__':
     engine = easyConnect()
     upsert_daily_markets(engine=engine,ts_codes=['000050.SZ'], start_date='20200806', end_date='20250806',

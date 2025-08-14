@@ -19,11 +19,11 @@ def get_index_basics(ts_code:str=""):
     return stock_data
 
 def upsert_index_basics(engine, ts_codes:list=[], table_name='index_basic_info',
-                        create_sql_command='USE DEFAULT index_basic_info', echo=False):
+                        create_sql_command='USE DEFAULT index_basic_info'):
     for each_code in ts_codes:
         df_uncleaned = get_index_basics(ts_code=each_code)
         primary_key = ['ts_code']
-        upsert_to_mysql(engine, table_name, df_uncleaned, primary_key, create_sql_command=create_sql_command, echo=echo)
+        upsert_to_mysql(engine, table_name, df_uncleaned, primary_key, create_sql_command=create_sql_command)
 
 
 

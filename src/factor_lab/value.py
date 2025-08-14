@@ -4,7 +4,8 @@ import pandas as pd
 import numpy as np
 from .base import FactorBase
 from utils.utils import easyPro
-
+from utils.logger_config import app_logger as logger
+from loguru import logger
 
 
 def get_daily_basic_data(ts_codes: list[str], start_date: str, end_date: str) -> pd.DataFrame:
@@ -26,7 +27,7 @@ def get_daily_basic_data(ts_codes: list[str], start_date: str, end_date: str) ->
     # df = pro.daily_basic(ts_code=','.join(ts_codes), start_date=start_date.replace('-',''), end_date=end_date.replace('-',''),
     #                      fields='ts_code,trade_date,total_mv,pe_ttm,pb,ps_ttm,dv_ttm')
     # return df
-    print(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的日线基本指标...")
+    logger.trace(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的日线基本指标...")
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
     pro = easyPro()
@@ -66,7 +67,7 @@ def get_financial_data(ts_codes: list[str], start_date: str, report_type: str) -
     """
 
 
-    print(f"正在获取 {len(ts_codes)} 支股票自 {start_date} 以来的 {report_type} 数据...")
+    logger.trace(f"正在获取 {len(ts_codes)} 支股票自 {start_date} 以来的 {report_type} 数据...")
     start_date = start_date.replace('-', '')
     pro = easyPro()
     all_data = []

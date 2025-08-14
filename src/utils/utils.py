@@ -7,11 +7,11 @@ from utils.commands_to_generate_sql_table import generator
 import pandas as pd
 from dotenv import load_dotenv
 import os
-from utils.decorators import *
 import tushare as ts
+from utils.logger_config import app_logger as logger
 
-
-def ensure_table_exists(engine, table_name: str, create_sql: str="", echo=False, df=pd.DataFrame()):
+@logger.catch()
+def ensure_table_exists(engine, table_name: str, create_sql: str="", df=pd.DataFrame()):
     """
     检查数据库中是否存在指定的表，如果不存在，则根据提供的SQL语句创建它。
 
@@ -22,46 +22,46 @@ def ensure_table_exists(engine, table_name: str, create_sql: str="", echo=False,
     """
     inspector = sqlalchemy.inspect(engine)
     if not inspector.has_table(table_name):
-        if echo: print(f"表格 '{table_name}' 不存在，正在自动创建...")
+        logger.debug(f"表格 '{table_name}' 不存在，正在自动创建...")
         try:
             if create_sql in ["", "auto", "akaza akari"]:
-                if echo: print("未输入SQL语句。")
+                logger.debug("未输入SQL语句。")
                 if table_name in generator.keys():
-                    if echo: print("在预设的SQL语句中找到了匹配的创建表格选项。")
+                    logger.debug("在预设的SQL语句中找到了匹配的创建表格选项。")
                     create_sql = generator[table_name]
                 else:
                     if df.empty:
-                        print("并未在预设的SQL语句中找到了匹配的创建表格选项，创建表格失败。")
+                        logger.error("并未在预设的SQL语句中找到了匹配的创建表格选项，创建表格失败。")
                         return False
                     else:
                         df.to_sql(table_name, engine)
-                        if echo: print("使用传入的数据自动新建了表格。")
+                        logger.debug("使用传入的数据自动新建了表格。")
                         return True
             elif create_sql[:11].lower() == "use default":
                 default_sql = create_sql.lower().replace("use default","").replace(" ","")
                 if default_sql in generator.keys():
-                    if echo: print("在预设的SQL语句中找到了匹配的创建表格选项。")
+                    logger.debug("在预设的SQL语句中找到了匹配的创建表格选项。")
                     create_sql = generator[default_sql]
                 else:
-                    print("并未在预设的SQL语句中找到了匹配的创建表格选项，创建表格失败。")
+                    logger.error("并未在预设的SQL语句中找到了匹配的创建表格选项，创建表格失败。")
                     return False
             with engine.connect() as connection:
                 connection.execute(sqlalchemy.text(create_sql.format(table_name=table_name)))
                 # 在SQLAlchemy 2.x中，DDL语句（如CREATE TABLE）通常会自动提交，
                 # 但在显式事务中执行可以确保某些数据库引擎下的行为一致性。
                 # 此处为简化，不使用显式begin()/commit()，因为connect()的with块已足够。
-            if echo: print(f"表格 '{table_name}' 创建成功。")
+            logger.success(f"表格 '{table_name}' 创建成功。")
             return True
         except Exception as e:
-            print(f"创建表格 '{table_name}' 时发生严重错误: {e}")
+            logger.error(f"创建表格 '{table_name}' 时发生严重错误: {e}")
             return False
     else:
-        # print(f"表格 '{table_name}' 已存在，无需创建。")
+        logger.trace(f"表格 '{table_name}' 已存在，无需创建。")
         return True
 
-@output_controller
+@logger.catch()
 def upsert_to_mysql(engine, table_name:str, df_uncleaned:pd.DataFrame, primary_key:list=['ts_code'],
-                    create_sql_command: str="", echo=False):
+                    create_sql_command: str=""):
     """
     将 Pandas DataFrame 的数据批量“更新或插入”(Upsert)到 MySQL 数据库表中。
 
@@ -78,20 +78,20 @@ def upsert_to_mysql(engine, table_name:str, df_uncleaned:pd.DataFrame, primary_k
                                       默认为 ['ts_code']。
         create_sql_command (str, optional): 如果表不存在时，用于创建表的 SQL DDL 语句。
                                              默认为空字符串，即不尝试创建表。
-        echo (bool, optional): 是否在控制台打印执行信息。默认为 False。
+        echo (bool, optional): 是否在控制台打印执行信息。默认为 False。现在此参数以废止，以loguru库中的日志控制取而代之。
 
     Returns:
         None: 该函数没有返回值。
     """
     if df_uncleaned is None or df_uncleaned.empty:
-        print("传入的DataFrame为空，操作已跳过。")
+        logger.warning("传入的DataFrame为空，操作已跳过。")
         return
     # 处理缺失值：将 DataFrame 中所有的 np.nan (以及 pd.NaT) 替换为 None。
     # .astype(object) 确保所有列都能容纳 None，然后 .where 进行替换。
     df = df_uncleaned.astype(object).where(pd.notnull(df_uncleaned), None)
     # 从 DataFrame 获取列名
     cols = [f"`{col}`" for col in df.columns]
-    # print(cols)
+    # logger.debug(cols)
     cols_str = ", ".join(cols)
     # 构造 VALUES 部分的具名占位符
     placeholders = ", ".join(f":{col}" for col in df.columns)
@@ -112,15 +112,15 @@ def upsert_to_mysql(engine, table_name:str, df_uncleaned:pd.DataFrame, primary_k
     # 执行SQL
     try:
 
-        if not ensure_table_exists(engine, table_name, create_sql_command, echo, df=df):
+        if not ensure_table_exists(engine, table_name, create_sql_command, df=df):
             raise pymysql.err.ProgrammingError("并未发现已存在的表格；同时尝试创建表格也失败了。")
         with engine.connect() as conn:
             with conn.begin() as transaction:
                 conn.execute(sqlalchemy.text(sql_query), data_list_of_dicts)
                 transaction.commit()
-            if echo: print(f"成功向表格 '{table_name}' 同步了 {len(df)} 条数据。")
+            logger.debug(f"成功向表格 '{table_name}' 同步了 {len(df)} 条数据。")
     except Exception as e:
-        print(f"写入数据库时发生错误:{e}")
+        logger.error(f"写入数据库时发生错误:{e}")
 
 def easyConnect() -> sqlalchemy.engine.base.Engine:
     load_dotenv()

@@ -7,10 +7,11 @@ from dotenv import load_dotenv
 from .base import FactorBase
 from utils.utils import *
 import tushare as ts
-
+from utils.logger_config import app_logger as logger
+from loguru import logger
 
 def get_sentiment_data(ts_codes: list[str], start_date: str, end_date: str, report_type: str) -> pd.DataFrame:
-    print(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的数据...")
+    logger.trace(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的数据...")
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
     all_data = []

@@ -45,7 +45,7 @@ def get_stock_basics():
     return stock_data
 
 def upsert_stock_basics(engine, table_name='stock_basic_info',
-                        create_sql_command='USE DEFAULT stock_basic_info', echo=False):
+                        create_sql_command='USE DEFAULT stock_basic_info'):
     """
     将 get_stock_basics 中获取到的 Pandas DataFrame的数据插入或更新到 MySQL 表中 (兼容 SQLAlchemy 2.x)。
 

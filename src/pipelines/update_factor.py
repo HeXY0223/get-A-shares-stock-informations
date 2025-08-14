@@ -2,7 +2,8 @@
 
 import sys
 from pathlib import Path
-
+from utils.logger_config import app_logger as logger
+from loguru import logger
 # 将 src 目录添加到系统路径，以便导入自定义模块
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -25,7 +26,8 @@ from factor_lab.liquidity import TurnoverRate20D, AmihudIlliquidity # Institutio
 from factor_lab.quality import ROE, DebtToAssetRatio, CashFlowToNetIncome, AccountsReceivableTurnover, OperatingProfitMargin
 # 将来可以添加更多
 
-def run_factor_update(table_name:str="factor_panel_data", echo=False):
+@logger.catch()
+def run_factor_update(table_name:str="factor_panel_data"):
     """
     执行所有因子计算和数据同步的主函数。
     """
@@ -84,16 +86,16 @@ def run_factor_update(table_name:str="factor_panel_data", echo=False):
             )
 
             # 2. 调用统一的保存方法
-            factor_instance.save_to_db(table_name=table_name, create_sql='USE DEFAULT factor_panel_data', echo=echo)
+            factor_instance.save_to_db(table_name=table_name, create_sql='USE DEFAULT factor_panel_data')
 
         except Exception as e:
             # 增加错误处理，确保一个因子失败不会中断整个流程
-            print(f"!!! 计算或存储因子 {factor_cls.__name__} 时发生错误: {e}")
+            logger.error(f"!!! 计算或存储因子 {factor_cls.__name__} 时发生错误: {e}")
             continue
 
 
 if __name__ == '__main__':
-    print("开始执行因子更新流程...")
-    run_factor_update(table_name="factor_panel_data", echo=True)
-    print("所有因子更新流程执行完毕。")
+    logger.info("开始执行因子更新流程...")
+    run_factor_update(table_name="factor_panel_data")
+    logger.info("所有因子更新流程执行完毕。")
 

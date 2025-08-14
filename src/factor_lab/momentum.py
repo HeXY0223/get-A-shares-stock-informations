@@ -7,10 +7,11 @@ from dotenv import load_dotenv
 from .base import FactorBase
 from utils.utils import *
 import tushare as ts
-
+from utils.logger_config import app_logger as logger
+from loguru import logger
 
 # 获取指定股票列表在某时间段内的日线行情数据
-def get_daily_data(ts_codes: list[str], start_date: str, end_date: str) -> pd.DataFrame:
+def get_momentum_data(ts_codes: list[str], start_date: str, end_date: str) -> pd.DataFrame:
     """
     获取日线行情数据的示例函数。
 
@@ -19,7 +20,7 @@ def get_daily_data(ts_codes: list[str], start_date: str, end_date: str) -> pd.Da
     - trade_date: 交易日期
     - close: 复权收盘价
     """
-    print(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的数据...")
+    logger.trace(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的数据...")
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
     all_data = []
@@ -51,7 +52,7 @@ class Return12M(FactorBase):
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(months=14)).strftime('%Y-%m-%d')
 
         # 获取复权收盘价
-        daily_data = get_daily_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = get_momentum_data(self.ts_codes, start_dt_extended, self.end_date)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
         # 计算250日收益率: (P_t / P_{t-250}) - 1
         factor_values = (close_prices / close_prices.shift(250)) - 1
@@ -81,7 +82,7 @@ class Alpha6M(FactorBase):
 
         # 获取个股和指数的复权收盘价
         all_codes = self.ts_codes + [self.index_code]
-        daily_data = get_daily_data(all_codes, start_dt_extended, self.end_date)
+        daily_data = get_momentum_data(all_codes, start_dt_extended, self.end_date)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
 
         # 计算120日收益率
@@ -111,7 +112,7 @@ class RSI14(FactorBase):
     def calculate(self) -> pd.DataFrame:
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(days=30)).strftime('%Y-%m-%d')
 
-        daily_data = get_daily_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = get_momentum_data(self.ts_codes, start_dt_extended, self.end_date)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
 
         # 计算价格变化
