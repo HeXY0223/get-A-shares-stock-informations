@@ -111,7 +111,7 @@ def update_stock_daily(engine, table_name: str):
         # 核心逻辑：比较我们数据库中存储的旧复权因子，和Tushare现在为同一天提供的复权因子是否一致
         logger.info("正在从 Tushare 获取最新的历史复权因子进行比对...")
 
-        # 1. 创建一个从 a latest_date -> [ts_code_list] 的映射，方便按天查询
+        # 1. 创建一个从 assets latest_date -> [ts_code_list] 的映射，方便按天查询
         date_to_codes_map = active_stocks_df.groupby(active_stocks_df['latest_date'].dt.strftime('%Y%m%d'))[
             'ts_code'].apply(list).to_dict()
 

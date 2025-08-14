@@ -62,6 +62,7 @@
   * 新添加了因子的计算与存储，它们在`src/factor_lab`文件夹下面；要运行批量因子计算，请运行`src/pipelines/update_factor.py`
   * 采用了更好的日志记录方式——loguru，现在你可以在logs文件夹下面查看日志
 
+![](assets/loguru_usage.png)
 
 * **25/08/04 ~ 25/08/08更新**：
   * 项目初步构建，在 `src/demo.py` 中实现了少量函数，用于演示 Tushare API 的调用和 MySQL 数据存储。
