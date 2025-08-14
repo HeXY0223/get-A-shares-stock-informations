@@ -16,11 +16,13 @@ from factor_lab.sentiment import ShareHolderNumCR, FinancingBalanceCR, AnalystRa
 
 from factor_lab.growth import Revenue, RevenueGR, CapExGR, GrossProfitGR, NetProfitGR
 
-#from factor_lab.technical import MACD, BollingerBandWidth
+from factor_lab.technical import MACD, BollingerBandWidth
 
 from factor_lab.volatility import AnnualizedVolatility, MaxDrawdown, BetaValue
 
 from factor_lab.liquidity import TurnoverRate20D, AmihudIlliquidity # InstitutionalHoldingChange还未实现
+
+from factor_lab.quality import ROE, DebtToAssetRatio, CashFlowToNetIncome, AccountsReceivableTurnover, OperatingProfitMargin
 # 将来可以添加更多
 
 def run_factor_update(table_name:str="factor_panel_data", echo=False):
@@ -39,30 +41,35 @@ def run_factor_update(table_name:str="factor_panel_data", echo=False):
 
     # 将所有要运行的因子类放入一个列表中
     factor_classes_to_run = [
-        # Return12M,
-        # Alpha6M,
-        # RSI14,
-        # PE,
-        # PB,
-        # PS,
-        # DY,
-        # EVEBITDA,
-        # ShareHolderNumCR,
-        # FinancingBalanceCR,
+        Return12M,
+        Alpha6M,
+        RSI14,
+        PE,
+        PB,
+        PS,
+        DY,
+        EVEBITDA,
+        ShareHolderNumCR,
+        FinancingBalanceCR,
         # AnalystRating # 积分不够 高频访问不了 lol
         # LonghuNetInflow # 贼慢！
-        # Revenue,
-        # RevenueGR,
-        # CapExGR,
-        # GrossProfitGR,
-        # NetProfitGR,
-        # MACD,
-        # BollingerBandWidth,
-        # AnnualizedVolatility,
-        # MaxDrawdown,
-        # BetaValue,
+        Revenue,
+        RevenueGR,
+        CapExGR,
+        GrossProfitGR,
+        NetProfitGR,
+        MACD,
+        BollingerBandWidth,
+        AnnualizedVolatility,
+        MaxDrawdown,
+        BetaValue,
         TurnoverRate20D,
-        AmihudIlliquidity
+        AmihudIlliquidity,
+        ROE,
+        DebtToAssetRatio,
+        CashFlowToNetIncome,
+        AccountsReceivableTurnover,
+        OperatingProfitMargin
     ]
 
     # --- 执行区 ---
