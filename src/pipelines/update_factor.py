@@ -16,7 +16,9 @@ from factor_lab.sentiment import ShareHolderNumCR, FinancingBalanceCR, AnalystRa
 
 from factor_lab.growth import Revenue, RevenueGR, CapExGR, GrossProfitGR, NetProfitGR
 
-from factor_lab.technical import MACD, BollingerBandWidth
+#from factor_lab.technical import MACD, BollingerBandWidth
+
+from factor_lab.volatility import AnnualizedVolatility, MaxDrawdown, BetaValue
 # 将来可以添加更多
 
 def run_factor_update(table_name:str="factor_panel_data", echo=False):
@@ -52,8 +54,11 @@ def run_factor_update(table_name:str="factor_panel_data", echo=False):
         # CapExGR,
         # GrossProfitGR,
         # NetProfitGR,
-        MACD,
-        BollingerBandWidth
+        # MACD,
+        # BollingerBandWidth,
+        AnnualizedVolatility,
+        MaxDrawdown,
+        BetaValue
     ]
 
     # --- 执行区 ---
