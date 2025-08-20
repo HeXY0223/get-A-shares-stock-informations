@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 from .base import FactorBase
-from utils.utils import easyPro
+from utils.utils import easyPro, easyConnect
 from utils.logger_config import app_logger as logger
 from loguru import logger
 
@@ -30,12 +30,28 @@ def get_daily_basic_data(ts_codes: list[str], start_date: str, end_date: str) ->
     logger.trace(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的日线基本指标...")
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
-    pro = easyPro()
+    # pro = easyPro()
+    # all_data = []
+    # for code in ts_codes:
+    #     df = pro.daily_basic(ts_code=code, start_date=start_date, end_date=end_date,
+    #                          fields=['ts_code', 'trade_date', 'total_mv', 'pe_ttm', 'pb', 'ps_ttm', 'dv_ttm'])
+    #     all_data.append(df)
+
+    # 临时改用本地数据库
+    conn = easyConnect()
     all_data = []
-    for code in ts_codes:
-        df = pro.daily_basic(ts_code=code, start_date=start_date, end_date=end_date,
-                             fields=['ts_code', 'trade_date', 'total_mv', 'pe_ttm', 'pb', 'ps_ttm', 'dv_ttm'])
-        all_data.append(df)
+    start_date_str = start_date.replace('-', '')
+    end_date_str = end_date.replace('-', '')
+    codes_str = "','".join(ts_codes)
+    query = (
+        f"SELECT ts_code, trade_date, total_mv, pe_ttm, pb, ps_ttm "
+        f"FROM temp_data "
+        f"WHERE ts_code IN ('{codes_str}') "
+        f"AND trade_date BETWEEN '{start_date_str}' AND '{end_date_str}'"
+    )
+    df = pd.read_sql(query, conn)
+    return df
+
     return pd.concat(all_data, ignore_index=True)
 
 
@@ -110,7 +126,8 @@ class PE(FactorBase):
         pe_wide = daily_basic.pivot(index='trade_date', columns='ts_code', values='pe_ttm')
 
         # 统一日期格式并排序
-        pe_wide.index = pd.to_datetime(pe_wide.index)
+        #pe_wide.index = pd.to_datetime(pe_wide.index)
+        pe_wide.index = pd.to_datetime(pe_wide.index, format='%Y%m%d')
         pe_wide = pe_wide.sort_index()
 
         # 进行切片
@@ -130,7 +147,8 @@ class PB(FactorBase):
         # 直接获取 pb
         daily_basic = get_daily_basic_data(self.ts_codes, self.start_date, self.end_date)
         pb_wide = daily_basic.pivot(index='trade_date', columns='ts_code', values='pb')
-        pb_wide.index = pd.to_datetime(pb_wide.index)
+        #pb_wide.index = pd.to_datetime(pb_wide.index)
+        pb_wide.index = pd.to_datetime(pb_wide.index, format='%Y%m%d')
         pb_wide = pb_wide.sort_index()
 
         start_dt_str = self.start_date.replace("-", "")
@@ -149,7 +167,8 @@ class PS(FactorBase):
         # 直接获取 ps_ttm
         daily_basic = get_daily_basic_data(self.ts_codes, self.start_date, self.end_date)
         ps_wide = daily_basic.pivot(index='trade_date', columns='ts_code', values='ps_ttm')
-        ps_wide.index = pd.to_datetime(ps_wide.index)
+        #ps_wide.index = pd.to_datetime(ps_wide.index)
+        ps_wide.index = pd.to_datetime(ps_wide.index, format='%Y%m%d')
         ps_wide = ps_wide.sort_index()
 
         start_dt_str = self.start_date.replace("-", "")

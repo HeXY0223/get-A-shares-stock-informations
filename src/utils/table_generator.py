@@ -133,6 +133,22 @@ generator = {
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='因子面板数据表';
 
 
+''',
+'factor_panel_data_without_foreign_key': '''
+                    CREATE TABLE `{table_name}`
+                    (
+                        `ts_code`     VARCHAR(15) NOT NULL COMMENT '股票代码，如“600519.SH”',
+                        `trade_date`  DATE        NOT NULL COMMENT '交易日期',
+                        `factor_name` VARCHAR(50) NOT NULL COMMENT '因子名称，关联到 factor_metadata 表',
+                        `factor_value` DOUBLE DEFAULT NULL COMMENT '因子值 (允许为NULL以处理缺失值)',
+
+                        PRIMARY KEY (`ts_code`, `trade_date`, `factor_name`),
+
+                        -- 查询某个因子在某个交易日的所有股票表现
+                        INDEX         `idx_factor_date` (`factor_name`, `trade_date`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='因子面板数据表';
+
+
 '''
 
                     }

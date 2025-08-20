@@ -55,7 +55,7 @@ class LoggerManager:
         # 文件输出
         logger.add(
             self.log_file_path,
-            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {process}:{thread} | {name}:{function}:{line} | {message}",
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} | {message}",
             level="TRACE",
             rotation="50 MB",
             retention="30 days",

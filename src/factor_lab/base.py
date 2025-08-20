@@ -8,7 +8,7 @@ import numpy as np
 from utils.logger_config import app_logger as logger
 from loguru import logger
 
-@logger.catch()
+
 class FactorBase(abc.ABC):
     """
     因子计算抽象基类
@@ -112,59 +112,6 @@ class FactorBase(abc.ABC):
             create_sql_command=create_sql,
         )
         logger.info(f"因子 {self.factor_name} 数据同步完成。")
-
-    def calculate_period_change_rate(self, data: pd.DataFrame, periods: int = 1,
-                                     use_abs_denominator: bool = False) -> pd.DataFrame:
-        """
-        计算期间变化率：(本期值 - 上期值) / 上期值 或 (本期值 - 上期值) / |上期值|
-
-        适用于计算各种财务指标的同比/环比变化率，如：
-        - 股东户数变化率
-        - 融资余额变化率
-        - 净利润变化率
-        - 毛利润变化率
-        - 营业收入变化率
-        - 购建固定资产现金支出变化率等
-
-        Args:
-            data (pd.DataFrame): 原始数据，index为日期，columns为股票代码
-            periods (int): 期间间隔，默认为1（上一期）
-            use_abs_denominator (bool): 是否对分母取绝对值，默认False
-                                      - False: (本期 - 上期) / 上期
-                                      - True:  (本期 - 上期) / |上期|
-
-        Returns:
-            pd.DataFrame: 计算后的变化率数据，格式与输入数据相同
-
-        Examples:
-            # 股东户数变化率（不取绝对值）
-            shareholder_change = self.calculate_period_change_rate(shareholder_data, periods=1, use_abs_denominator=False)
-
-            # 净利润变化率（分母取绝对值）
-            profit_change = self.calculate_period_change_rate(profit_data, periods=1, use_abs_denominator=True)
-        """
-        if data.empty:
-            return pd.DataFrame()
-
-        # 确保数据按日期排序
-        data_sorted = data.sort_index()
-
-        # 计算上期值
-        previous_data = data_sorted.shift(periods)
-
-        # 计算分子：本期 - 上期
-        numerator = data_sorted - previous_data
-
-        # 计算分母：上期值或|上期值|
-        denominator = previous_data.abs() if use_abs_denominator else previous_data
-
-        # 计算变化率，避免除零
-        change_rate = numerator / denominator
-
-        # 处理无穷大和NaN值
-        change_rate = change_rate.replace([np.inf, -np.inf], np.nan)
-
-        return change_rate
 
 
     def calculate_period_change_rate_from_long_data(self, data: pd.DataFrame,

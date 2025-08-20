@@ -3,7 +3,7 @@ import inspect
 
 import pymysql
 import sqlalchemy
-from utils.commands_to_generate_sql_table import generator
+from utils.table_generator import generator
 import pandas as pd
 from dotenv import load_dotenv
 import os
