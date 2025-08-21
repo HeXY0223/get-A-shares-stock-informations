@@ -1,0 +1,80 @@
+{
+  "_meta": {
+    "version": "0.1.1",
+    "note": "将业务字段映射到 Tushare 接口及字段，供路由器自动选择。可根据业务自由扩充。",
+    "last_updated": "2025-08-21"
+  },
+  "stock_basic": {
+    "doc_id": 9,
+    "endpoint": "stock_basic",
+    "id_param": "ts_code",
+    "date_field": null,
+    "default_params": {
+      "fields": "ts_code,symbol,name,area,industry,market,exchange,curr_type,list_status,list_date,delist_date"
+    },
+    "field_map": {
+      "ts_code": "ts_code",
+      "symbol": "symbol",
+      "name": "name",
+      "area": "area",
+      "industry": "industry",
+      "market": "market",
+      "exchange": "exchange",
+      "curr_type": "curr_type",
+      "list_status": "list_status",
+      "list_date": "list_date",
+      "delist_date": "delist_date"
+    }
+  },
+  "daily_basic": {
+    "doc_id": 32,
+    "endpoint": "daily_basic",
+    "id_param": "ts_code",
+    "date_field": "trade_date",
+    "default_params": {},
+    "field_map": {
+      "ts_code": "ts_code",
+      "trade_date": "trade_date",
+      "close": "close",
+      "turnover_rate": "turnover_rate",
+      "turnover_rate_f": "turnover_rate_f",
+      "volume_ratio": "volume_ratio",
+      "pe": "pe",
+      "pe_ttm": "pe_ttm",
+      "pb": "pb",
+      "ps": "ps",
+      "ps_ttm": "ps_ttm",
+      "dv_ratio": "dv_ratio",
+      "dv_ttm": "dv_ttm",
+      "total_share": "total_share",
+      "float_share": "float_share",
+      "free_share": "free_share",
+      "total_mv": "total_mv",
+      "circ_mv": "circ_mv"
+    }
+  },
+  "daily_bar": {
+    "doc_id": 31,
+    "endpoint": "pro_bar",
+    "id_param": "ts_code",
+    "date_field": "trade_date",
+    "default_params": {
+      "asset": "E",
+      "freq": "D"
+    },
+    "field_map": {
+      "ts_code": "ts_code",
+      "trade_date": "trade_date",
+      "open": "open",
+      "high": "high",
+      "low": "low",
+      "close": "close",
+      "pre_close": "pre_close",
+      "change": "change",
+      "pct_chg": "pct_chg",
+      "vol": "vol",
+      "amount": "amount"
+    },
+    "supports_adj": true
+  }
+}

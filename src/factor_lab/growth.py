@@ -59,9 +59,8 @@ class NetProfitGR(FactorBase):
         net_profit = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='income')
         net_profit.drop_duplicates(subset=['ts_code', 'trade_date'], keep='last', inplace=True)
 
-        net_profitCR = self.calculate_period_change_rate_from_long_data(data=net_profit,
-                                                                        value_col='n_income',
-                                                                        use_abs_denominator=True)
+        net_profitCR = self.calculate_period_change_rate(data=net_profit, value_col='n_income',
+                                                         use_abs_denominator=True)
         npCR_wide = net_profitCR.pivot(index='trade_date', columns='ts_code', values='change_rate')
         start_dt_str = self.start_date.replace("-", "")
         end_dt_str = self.end_date.replace("-", "")
@@ -77,9 +76,8 @@ class GrossProfitGR(FactorBase):
         gross_profit = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='income')
         gross_profit.drop_duplicates(subset=['ts_code', 'trade_date'], keep='last', inplace=True)
         gross_profit['gross_profit'] = gross_profit['revenue'] - gross_profit['oper_cost']
-        gross_profitCR = self.calculate_period_change_rate_from_long_data(data=gross_profit,
-                                                                          value_col='gross_profit',
-                                                                          use_abs_denominator=True)
+        gross_profitCR = self.calculate_period_change_rate(data=gross_profit, value_col='gross_profit',
+                                                           use_abs_denominator=True)
         gpCR_wide = gross_profitCR.pivot(index='trade_date', columns='ts_code', values='change_rate')
         start_dt_str = self.start_date.replace("-", "")
         end_dt_str = self.end_date.replace("-", "")
@@ -95,9 +93,7 @@ class RevenueGR(FactorBase):
         revenue = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='income')
         revenue.drop_duplicates(subset=['ts_code', 'trade_date'], keep='last', inplace=True)
 
-        revenueCR = self.calculate_period_change_rate_from_long_data(data=revenue,
-                                                                     value_col='revenue',
-                                                                     use_abs_denominator=True)
+        revenueCR = self.calculate_period_change_rate(data=revenue, value_col='revenue', use_abs_denominator=True)
         rCR_wide = revenueCR.pivot(index='trade_date', columns='ts_code', values='change_rate')
         start_dt_str = self.start_date.replace("-", "")
         end_dt_str = self.end_date.replace("-", "")
@@ -113,9 +109,8 @@ class CapExGR(FactorBase):
         capex = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='cashflow')
         capex.drop_duplicates(subset=['ts_code', 'trade_date'], keep='last', inplace=True)
 
-        capexCR = self.calculate_period_change_rate_from_long_data(data=capex,
-                                                                   value_col='c_pay_acq_const_fiolta',
-                                                                   use_abs_denominator=True)
+        capexCR = self.calculate_period_change_rate(data=capex, value_col='c_pay_acq_const_fiolta',
+                                                    use_abs_denominator=True)
         capexCR_wide = capexCR.pivot(index='trade_date', columns='ts_code', values='change_rate')
         start_dt_str = self.start_date.replace("-", "")
         end_dt_str = self.end_date.replace("-", "")

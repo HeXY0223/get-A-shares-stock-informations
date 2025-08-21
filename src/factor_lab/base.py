@@ -113,13 +113,43 @@ class FactorBase(abc.ABC):
         )
         logger.info(f"因子 {self.factor_name} 数据同步完成。")
 
+    def add(df, add1: str, add2: str, result: str = ""):
+        if result:
+            df[result] = df[add1] + df[add2]
+        else:
+            print(f'{add1}_add_{add2}')
+            df[f'{add1}_add_{add2}'] = df[add1] + df[add2]
 
-    def calculate_period_change_rate_from_long_data(self, data: pd.DataFrame,
-                                                    value_col: str,
-                                                    date_col: str = 'trade_date',
-                                                    ts_code_col: str = 'ts_code',
-                                                    periods: int = 1,
-                                                    use_abs_denominator: bool = False) -> pd.DataFrame:
+    def sub(df, sub1: str, sub2: str, result: str = ""):
+        if result:
+            df[result] = df[sub1] - df[sub2]
+        else:
+            print(f'{sub1}_sub_{sub2}')
+            df[f'{sub1}_sub_{sub2}'] = df[sub1] - df[sub2]
+
+    def mul(df, mul1: str, mul2: str, result: str = ""):
+        if result:
+            df[result] = df[mul1] * df[mul2]
+        else:
+            print(f'{mul1}_mul_{mul2}')
+            df[f'{mul1}_mul_{mul2}'] = df[mul1] * df[mul2]
+
+    def div(df, div1: str, div2: str, result: str = ""):
+        if result:
+            df[result] = df[div1] / df[div2]
+        else:
+            print(f'{div1}_div_{div2}')
+            df[f'{div1}_div_{div2}'] = df[div1] / df[div2]
+
+    def changedate(origin_date, days: int):
+        return (pd.to_datetime(origin_date) + pd.DateOffset(days=days)).strftime('%Y-%m-%d')
+
+    def calculate_period_change_rate(self, data: pd.DataFrame,
+                                     value_col: str,
+                                     date_col: str = 'trade_date',
+                                     ts_code_col: str = 'ts_code',
+                                     periods: int = 1,
+                                     use_abs_denominator: bool = False) -> pd.DataFrame:
         """
         从长格式（窄表）数据计算期间变化率：(本期值 - 上期值) / 上期值 或 (本期值 - 上期值) / |上期值|
 

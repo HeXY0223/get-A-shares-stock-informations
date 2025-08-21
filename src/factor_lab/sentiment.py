@@ -60,9 +60,8 @@ class ShareHolderNumCR(FactorBase):
         real_start_date = (pd.to_datetime(self.start_date) -pd.DateOffset(months=6)).strftime('%Y-%m-%d')
         holder_num_df = get_sentiment_data(self.ts_codes, self.start_date, self.end_date, report_type='stk_holdernumber')
         holder_num_df.drop_duplicates(subset=['ts_code', 'end_date'], keep='last', inplace=True)
-        holder_num_change = self.calculate_period_change_rate_from_long_data(data=holder_num_df,
-                                                                             value_col='holder_num',
-                                                                             date_col='end_date')
+        holder_num_change = self.calculate_period_change_rate(data=holder_num_df, value_col='holder_num',
+                                                              date_col='end_date')
         # 去掉一些change_rate=0的数据，这种数据产生通常是因为数据挨得太近，比如两天。不知道tushare怎么想的
         holder_num_change = holder_num_change[holder_num_change['change_rate'] != 0]
         holder_num_change.rename(columns={'end_date': 'trade_date'}, inplace=True)
@@ -83,8 +82,7 @@ class FinancingBalanceCR(FactorBase):
         financing_balance = get_sentiment_data(self.ts_codes, real_start_date, self.end_date, report_type='financing_balance')
         financing_balance.drop_duplicates(subset=['ts_code', 'trade_date'], keep='last', inplace=True)
 
-        financing_balanceCR = self.calculate_period_change_rate_from_long_data(data=financing_balance,
-                                                                               value_col='rzye')
+        financing_balanceCR = self.calculate_period_change_rate(data=financing_balance, value_col='rzye')
         fbCR_wide = financing_balanceCR.pivot(index='trade_date', columns='ts_code', values='change_rate')
         start_dt_str = self.start_date.replace("-", "")
         end_dt_str = self.end_date.replace("-", "")

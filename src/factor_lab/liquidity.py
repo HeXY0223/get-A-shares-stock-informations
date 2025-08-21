@@ -135,14 +135,9 @@ class InstitutionalHoldingChange(FactorBase):
         inst_data['end_date'] = pd.to_datetime(inst_data['end_date'])
 
         # 使用基类提供的方法计算期间变化率
-        change_rate_df = self.calculate_period_change_rate_from_long_data(
-            data=inst_data,
-            value_col='inst_hold_ratio',
-            date_col='end_date',
-            ts_code_col='ts_code',
-            periods=1,
-            use_abs_denominator=False  # 机构持股比例变化不需要取绝对值
-        )
+        change_rate_df = self.calculate_period_change_rate(data=inst_data, value_col='inst_hold_ratio',
+                                                           date_col='end_date', ts_code_col='ts_code', periods=1,
+                                                           use_abs_denominator=False)
 
         if change_rate_df.empty:
             return pd.DataFrame()
