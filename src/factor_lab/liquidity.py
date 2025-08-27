@@ -29,8 +29,6 @@ def get_daily_trading_data(ts_codes: list[str], start_date: str, end_date: str, 
         logger.info("换手率传入参数应为turnover_rate或turnover_rate_f,后者为换手率（自由流通股）。已自动更改为turnover_rate")
         turnover = 'turnover_rate'
     for code in ts_codes:
-        # 模拟交易数据
-
         df_1 = pro.daily_basic(ts_code=code, start_date=start_date, end_date=end_date,
                             fields=f"ts_code,trade_date,{turnover}") # requires 2 apis
         df_2 = ts.pro_bar(ts_code=code, start_date=start_date, end_date=end_date,
@@ -73,10 +71,13 @@ class TurnoverRate20D(FactorBase):
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(days=40)).strftime('%Y-%m-%d')
 
         # 获取交易数据
-        trading_data = get_daily_trading_data(self.ts_codes, start_dt_extended, self.end_date)
+        #trading_data = get_daily_trading_data(self.ts_codes, start_dt_extended, self.end_date)
+        trading_data = self.fetch_data([
+            {'api':'daily_basic', 'fields':'turnover_rate'}
+        ], start_date=start_dt_extended)
 
         # 透视表获取换手率数据
-        turnover_data = trading_data.pivot(columns='ts_code', values='turnover_rate')
+        turnover_data = trading_data.pivot(index='trade_date', columns='ts_code', values='turnover_rate')
 
         # 计算20日移动平均
         factor_values = turnover_data.rolling(window=20, min_periods=10).mean()
@@ -97,13 +98,17 @@ class AmihudIlliquidity(FactorBase):
 
     def calculate(self) -> pd.DataFrame:
         # 获取交易数据
-        trading_data = get_daily_trading_data(self.ts_codes, self.start_date, self.end_date)
+        #trading_data = get_daily_trading_data(self.ts_codes, self.start_date, self.end_date)
+        trading_data = self.fetch_data([{
+            'api':'pro_bar','fields':'change,pre_close,amount',
+        }])
 
         # 计算每日的Amihud指标
+        trading_data['pct_chg'] = trading_data['price_change_qfq'] / trading_data['pre_close_qfq']
         trading_data['amihud_daily'] = trading_data['pct_chg'].abs() / (trading_data['amount'] * 1000)  # 成交额转换为元
 
         # 透视表
-        amihud_daily = trading_data.pivot(columns='ts_code', values='amihud_daily')
+        amihud_daily = trading_data.pivot(index='trade_date', columns='ts_code', values='amihud_daily')
 
         # Amihud指标通常取对数以减少极值影响，并乘以10^6便于观察
         factor_values = np.log(amihud_daily * 1000000 + 1)  # 加1避免取对数时为负无穷

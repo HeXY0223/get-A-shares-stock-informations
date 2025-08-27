@@ -58,7 +58,11 @@ class ShareHolderNumCR(FactorBase):
 
     def calculate(self) -> pd.DataFrame:
         real_start_date = (pd.to_datetime(self.start_date) -pd.DateOffset(months=6)).strftime('%Y-%m-%d')
-        holder_num_df = get_sentiment_data(self.ts_codes, self.start_date, self.end_date, report_type='stk_holdernumber')
+        #holder_num_df = get_sentiment_data(self.ts_codes, self.start_date, self.end_date, report_type='stk_holdernumber')
+        holder_num_df = self.fetch_data([{
+            'api':'stk_holdernumber','fields':'end_date,holder_num'
+        }],start_date=real_start_date)
+        holder_num_df.rename(columns={'trade_date':'end_date'}, inplace=True)
         holder_num_df.drop_duplicates(subset=['ts_code', 'end_date'], keep='last', inplace=True)
         holder_num_change = self.calculate_period_change_rate(data=holder_num_df, value_col='holder_num',
                                                               date_col='end_date')
@@ -79,7 +83,10 @@ class FinancingBalanceCR(FactorBase):
 
     def calculate(self) -> pd.DataFrame:
         real_start_date = (pd.to_datetime(self.start_date) - pd.DateOffset(days=8)).strftime('%Y-%m-%d')
-        financing_balance = get_sentiment_data(self.ts_codes, real_start_date, self.end_date, report_type='financing_balance')
+        #financing_balance = get_sentiment_data(self.ts_codes, real_start_date, self.end_date, report_type='financing_balance')
+        financing_balance = self.fetch_data([{
+            'api':'margin_detail','fields':'rzye'
+        }],start_date=real_start_date)
         financing_balance.drop_duplicates(subset=['ts_code', 'trade_date'], keep='last', inplace=True)
 
         financing_balanceCR = self.calculate_period_change_rate(data=financing_balance, value_col='rzye')
@@ -96,7 +103,10 @@ class AnalystRating(FactorBase):
         return '分析师评级变化'
 
     def calculate(self) -> pd.DataFrame:
-        analyst_rating = get_sentiment_data(self.ts_codes, self.start_date, self.end_date, report_type='analyst_rating')
+        #analyst_rating = get_sentiment_data(self.ts_codes, self.start_date, self.end_date, report_type='analyst_rating')
+        analyst_rating = self.fetch_data([{
+            'api':'report_rc','fields':'report_title,rating'
+        }])
         # 取每个季度末为本季度的综合评级时间
         # 数据去重
         analyst_rating.drop_duplicates(subset=['report_title'], keep='last', inplace=True)
@@ -150,9 +160,12 @@ class LonghuNetInflow(FactorBase):
         """
         计算龙虎榜机构席位月度净买入总额。
         """
-        # 1. 获取龙虎榜机构席位数据 (假设的函数)
-        # 该函数应返回DataFrame，包含 ['ts_code', 'trade_date', 'net_buy'] (净买入额)
-        raw_data = get_sentiment_data(self.ts_codes, self.start_date, self.end_date, report_type="top_inst")
+        # 1. 获取龙虎榜机构席位数据
+        # 返回DataFrame，包含 ['ts_code', 'trade_date', 'net_buy'] (净买入额)
+        #raw_data = get_sentiment_data(self.ts_codes, self.start_date, self.end_date, report_type="top_inst")
+        raw_data = self.fetch_data([{
+            'api':'top_inst','fields':'net_buy'
+        }])
         copies = raw_data.copy()
         raw_data = raw_data[['ts_code','trade_date','net_buy']]
         if raw_data.empty:

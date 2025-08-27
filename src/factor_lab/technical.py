@@ -53,7 +53,11 @@ class MACD(FactorBase):
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(days=120)).strftime('%Y-%m-%d')
 
         # 获取复权收盘价数据
-        daily_data = get_technical_data(self.ts_codes, start_dt_extended, self.end_date)
+        #daily_data = get_technical_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = self.fetch_data([{
+            'api':'pro_bar','adj':'qfq','fields':'close'
+        }], start_date=start_dt_extended)
+        daily_data.rename(columns={'close_qfq':'close'}, inplace=True)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
 
         # 计算12日EMA和26日EMA
@@ -102,7 +106,11 @@ class BollingerBandWidth(FactorBase):
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(days=60)).strftime('%Y-%m-%d')
 
         # 获取复权收盘价数据
-        daily_data = get_technical_data(self.ts_codes, start_dt_extended, self.end_date)
+        #daily_data = get_technical_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = self.fetch_data([{
+            'api':'pro_bar','adj':'qfq','fields':'close'
+        }], start_date=start_dt_extended)
+        daily_data.rename(columns={'close_qfq':'close'}, inplace=True)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
 
         # 计算20日移动平均线（中轨）
@@ -144,7 +152,10 @@ class MACD_Signal(FactorBase):
     def calculate(self) -> pd.DataFrame:
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(days=120)).strftime('%Y-%m-%d')
 
-        daily_data = get_technical_data(self.ts_codes, start_dt_extended, self.end_date)
+        #daily_data = get_technical_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = self.fetch_data([{
+            'api':'pro_bar','adj':'qfq','fields':'close'
+        }], start_date=start_dt_extended)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
 
         # 先计算MACD线
@@ -175,7 +186,10 @@ class MACD_Histogram(FactorBase):
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(days=120)).strftime('%Y-%m-%d')
 
         daily_data = get_technical_data(self.ts_codes, start_dt_extended, self.end_date)
-        close_prices = daily_data.pivot(columns='ts_code', values='close')
+        #close_prices = daily_data.pivot(columns='ts_code', values='close')
+        close_prices = self.fetch_data([{
+            'api':'pro_bar','adj':'qfq','fields':'close'
+        }], start_date=start_dt_extended)
 
         # 计算MACD线
         ema_12 = close_prices.ewm(span=12, adjust=False).mean()

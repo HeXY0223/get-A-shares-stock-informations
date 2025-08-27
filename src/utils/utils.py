@@ -119,6 +119,7 @@ def upsert_to_mysql(engine, table_name:str, df_uncleaned:pd.DataFrame, primary_k
                 conn.execute(sqlalchemy.text(sql_query), data_list_of_dicts)
                 transaction.commit()
             logger.debug(f"成功向表格 '{table_name}' 同步了 {len(df)} 条数据。")
+        engine.dispose()
     except Exception as e:
         logger.error(f"写入数据库时发生错误:{e}")
 

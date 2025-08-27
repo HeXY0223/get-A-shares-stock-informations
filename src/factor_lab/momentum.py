@@ -29,7 +29,7 @@ def get_momentum_data(ts_codes: list[str], start_date: str, end_date: str) -> pd
         if code.endswith('.SI'):
             df = pro.sw_daily(ts_code=code, start_date=start_date, end_date=end_date)
         else:
-            df = ts.pro_bar(ts_code=code, start_date=start_date, end_date=end_date, adj='hfq')
+            df = ts.pro_bar(ts_code=code, start_date=start_date, end_date=end_date, adj='qfq')
         all_data.append(df)
 
     return pd.concat(all_data).set_index('trade_date')
@@ -52,7 +52,10 @@ class Return12M(FactorBase):
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(months=14)).strftime('%Y-%m-%d')
 
         # 获取复权收盘价
-        daily_data = get_momentum_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = self.fetch_data([{
+            'api':'pro_bar','adj':'qfq','fields':'close'
+        }], start_date=start_dt_extended)
+        daily_data.rename(columns={'close_qfq':'close'}, inplace=True)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
         # 计算250日收益率: (P_t / P_{t-250}) - 1
         factor_values = (close_prices / close_prices.shift(250)) - 1
@@ -82,7 +85,9 @@ class Alpha6M(FactorBase):
 
         # 获取个股和指数的复权收盘价
         all_codes = self.ts_codes + [self.index_code]
-        daily_data = get_momentum_data(all_codes, start_dt_extended, self.end_date)
+        daily_data = self.fetch_data([{
+            'api':'pro_bar','adj':'qfq','fields':'close'
+        }], start_date=start_dt_extended)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
 
         # 计算120日收益率
@@ -112,7 +117,10 @@ class RSI14(FactorBase):
     def calculate(self) -> pd.DataFrame:
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(days=30)).strftime('%Y-%m-%d')
 
-        daily_data = get_momentum_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = self.fetch_data([{
+            'api': 'pro_bar', 'adj': 'qfq', 'fields': 'close'
+        }], start_date=start_dt_extended)
+        daily_data.rename(columns={'close_qfq': 'close'}, inplace=True)
         close_prices = daily_data.pivot(columns='ts_code', values='close')
 
         # 计算价格变化

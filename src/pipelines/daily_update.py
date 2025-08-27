@@ -190,6 +190,6 @@ def update_stock_daily(engine, table_name: str):
 if __name__ == '__main__':
     try:
         db_engine = easyConnect()
-        update_stock_daily(engine=db_engine, table_name="stock_daily_electronic_information")
+        update_stock_daily(engine=db_engine, table_name="stock_daily")
     except Exception as e:
         logger.error(f"程序执行出错: {e}")

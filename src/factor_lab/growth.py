@@ -40,7 +40,10 @@ class Revenue(FactorBase):
     def calculate(self) -> pd.DataFrame:
         real_start_date = (pd.to_datetime(self.start_date) - pd.DateOffset(months=3)).strftime('%Y-%m-%d')
         real_end_date = (pd.to_datetime(self.end_date) + pd.DateOffset(months=3)).strftime('%Y-%m-%d')
-        rev = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='income')
+        #rev = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='income')
+        rev = self.fetch_data([{
+            'api':'income', 'fields':'end_date,revenue,n_income,oper_cost'
+        }], start_date=real_start_date, end_date=real_end_date)
         cp = rev.copy()
         rev.drop_duplicates(subset=['ts_code', 'trade_date'], keep='last', inplace=True)
         rev_wide = rev.pivot(index='trade_date', columns='ts_code', values='revenue')
@@ -56,7 +59,10 @@ class NetProfitGR(FactorBase):
     def calculate(self) -> pd.DataFrame:
         real_start_date = (pd.to_datetime(self.start_date) - pd.DateOffset(months=3)).strftime('%Y-%m-%d')
         real_end_date = (pd.to_datetime(self.end_date) + pd.DateOffset(months=3)).strftime('%Y-%m-%d')
-        net_profit = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='income')
+        #net_profit = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='income')
+        net_profit = self.fetch_data([{
+            'api': 'income', 'fields': 'end_date,revenue,n_income,oper_cost'
+        }])
         net_profit.drop_duplicates(subset=['ts_code', 'trade_date'], keep='last', inplace=True)
 
         net_profitCR = self.calculate_period_change_rate(data=net_profit, value_col='n_income',
@@ -73,7 +79,10 @@ class GrossProfitGR(FactorBase):
     def calculate(self) -> pd.DataFrame:
         real_start_date = (pd.to_datetime(self.start_date) - pd.DateOffset(months=3)).strftime('%Y-%m-%d')
         real_end_date = (pd.to_datetime(self.end_date) + pd.DateOffset(months=3)).strftime('%Y-%m-%d')
-        gross_profit = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='income')
+        #gross_profit = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='income')
+        gross_profit = self.fetch_data([{
+            'api': 'income', 'fields': 'end_date,revenue,n_income,oper_cost'
+        }])
         gross_profit.drop_duplicates(subset=['ts_code', 'trade_date'], keep='last', inplace=True)
         gross_profit['gross_profit'] = gross_profit['revenue'] - gross_profit['oper_cost']
         gross_profitCR = self.calculate_period_change_rate(data=gross_profit, value_col='gross_profit',
@@ -90,7 +99,10 @@ class RevenueGR(FactorBase):
     def calculate(self) -> pd.DataFrame:
         real_start_date = (pd.to_datetime(self.start_date) - pd.DateOffset(months=3)).strftime('%Y-%m-%d')
         real_end_date = (pd.to_datetime(self.end_date) + pd.DateOffset(months=3)).strftime('%Y-%m-%d')
-        revenue = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='income')
+        #revenue = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='income')
+        revenue = self.fetch_data([{
+            'api': 'income', 'fields': 'end_date,revenue,n_income,oper_cost'
+        }])
         revenue.drop_duplicates(subset=['ts_code', 'trade_date'], keep='last', inplace=True)
 
         revenueCR = self.calculate_period_change_rate(data=revenue, value_col='revenue', use_abs_denominator=True)
@@ -106,7 +118,10 @@ class CapExGR(FactorBase):
     def calculate(self) -> pd.DataFrame:
         real_start_date = (pd.to_datetime(self.start_date) - pd.DateOffset(months=3)).strftime('%Y-%m-%d')
         real_end_date = (pd.to_datetime(self.end_date) + pd.DateOffset(months=3)).strftime('%Y-%m-%d')
-        capex = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='cashflow')
+        #capex = get_growth_data(self.ts_codes, real_start_date, real_end_date, report_type='cashflow')
+        capex = self.fetch_data([{
+            'api': 'cashflow', 'fields': 'end_date,c_pay_acq_const_fiolta'
+        }])
         capex.drop_duplicates(subset=['ts_code', 'trade_date'], keep='last', inplace=True)
 
         capexCR = self.calculate_period_change_rate(data=capex, value_col='c_pay_acq_const_fiolta',

@@ -1,4 +1,4 @@
-# src/factor_lab/quality.py
+  # src/factor_lab/quality.py
 
 import pandas as pd
 import numpy as np
@@ -92,31 +92,31 @@ def get_financial_data(ts_codes: list[str], start_date: str, end_date: str) -> p
         return pd.DataFrame()
 
 
-def get_daily_basic(ts_codes: list[str], start_date: str, end_date: str) -> pd.DataFrame:
-    """
-    获取每日基本面数据的示例函数。
-
-    返回的 DataFrame 应包含:
-    - ts_code: 股票代码
-    - trade_date: 交易日期
-    - pe: 市盈率
-    - pb: 市净率
-    - total_mv: 总市值
-    """
-    logger.trace(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的财务数据...")
-    start_date = start_date.replace('-', '')
-    end_date = end_date.replace('-', '')
-    pro = easyPro()
-    all_data = []
-
-    for code in ts_codes:
-        df = pro.daily_basic(ts_code=code, start_date=start_date, end_date=end_date,
-                             fields="ts_code,trade_date,pe,pb,total_mv")
-        all_data.append(df)
-    all_data = [df for df in all_data if not df.empty]
-    if not all_data:
-        return pd.DataFrame()
-    return pd.concat(all_data, ignore_index=True)
+#def get_daily_basic(ts_codes: list[str], start_date: str, end_date: str) -> pd.DataFrame:
+#    """
+#    获取每日基本面数据的示例函数。
+#
+#    返回的 DataFrame 应包含:
+#    - ts_code: 股票代码
+#    - trade_date: 交易日期
+#    - pe: 市盈率
+#    - pb: 市净率
+#    - total_mv: 总市值
+#    """
+#    logger.trace(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的财务数据...")
+#    start_date = start_date.replace('-', '')
+#    end_date = end_date.replace('-', '')
+#    pro = easyPro()
+#    all_data = []
+#
+#    for code in ts_codes:
+#        df = pro.daily_basic(ts_code=code, start_date=start_date, end_date=end_date,
+#                             fields="ts_code,trade_date,pe,pb,total_mv")
+#        all_data.append(df)
+#    all_data = [df for df in all_data if not df.empty]
+#    if not all_data:
+#        return pd.DataFrame()
+#    return pd.concat(all_data, ignore_index=True)
 
 
 # --- 质量类因子实现 ---
@@ -135,7 +135,15 @@ class ROE(FactorBase):
         # 获取财务数据，需要多获取一个季度用于计算平均值
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(months=6)).strftime('%Y-%m-%d')
         end_dt_extended = (pd.to_datetime(self.end_date) + pd.DateOffset(months=3)).strftime('%Y-%m-%d')
-        financial_data = get_financial_data(self.ts_codes, start_dt_extended, end_dt_extended)
+        #financial_data = get_financial_data(self.ts_codes, start_dt_extended, end_dt_extended)
+        financial_data = self.fetch_data([
+            {'api':'balancesheet','fields':'end_date,total_hldr_eqy_inc_min_int'},
+            {'api':'income','fields':'end_date,n_income'}
+        ],start_date=start_dt_extended, end_date=end_dt_extended)
+        # 重命名列以匹配目标字段
+        financial_data.rename(columns={
+            'total_hldr_eqy_inc_min_int': 'total_equity', 'trade_date': 'end_date'
+        }, inplace=True)
 
         if financial_data.empty:
             return pd.DataFrame()
@@ -193,11 +201,13 @@ class DebtToAssetRatio(FactorBase):
     def calculate(self) -> pd.DataFrame:
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(months=6)).strftime('%Y-%m-%d')
         end_dt_extended = (pd.to_datetime(self.end_date) + pd.DateOffset(months=3)).strftime('%Y-%m-%d')
-        financial_data = get_financial_data(self.ts_codes, start_dt_extended, end_dt_extended)
-
+        #financial_data = get_financial_data(self.ts_codes, start_dt_extended, end_dt_extended)
+        financial_data = self.fetch_data([{
+            'api':'balancesheet','fields':'end_date,total_assets,total_liab'
+        }],start_date=start_dt_extended, end_date=end_dt_extended)
         if financial_data.empty:
             return pd.DataFrame()
-
+        financial_data.rename(columns={'trade_date':'end_date'}, inplace=True)
         # 计算资产负债率
         financial_data['debt_ratio'] = financial_data['total_liab'] / financial_data['total_assets']
         financial_data['debt_ratio'] = financial_data['debt_ratio'].replace([np.inf, -np.inf], np.nan)
@@ -229,8 +239,11 @@ class CashFlowToNetIncome(FactorBase):
     def calculate(self) -> pd.DataFrame:
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(months=6)).strftime('%Y-%m-%d')
         end_dt_extended = (pd.to_datetime(self.end_date) + pd.DateOffset(months=3)).strftime('%Y-%m-%d')
-        financial_data = get_financial_data(self.ts_codes, start_dt_extended, end_dt_extended)
-
+        #financial_data = get_financial_data(self.ts_codes, start_dt_extended, end_dt_extended)
+        financial_data = self.fetch_data([
+            {'api':'cashflow','fields':'end_date,n_cashflow_act'},
+            {'api':'income','fields':'end_date,n_income'}
+        ],start_date=start_dt_extended,end_date=end_dt_extended)
         if financial_data.empty:
             return pd.DataFrame()
 
@@ -266,7 +279,11 @@ class AccountsReceivableTurnover(FactorBase):
         # 获取财务数据，需要多获取一个季度用于计算平均值
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(months=6)).strftime('%Y-%m-%d')
         end_dt_extended = (pd.to_datetime(self.end_date) + pd.DateOffset(months=3)).strftime('%Y-%m-%d')
-        financial_data = get_financial_data(self.ts_codes, start_dt_extended, end_dt_extended)
+        #financial_data = get_financial_data(self.ts_codes, start_dt_extended, end_dt_extended)
+        financial_data = self.fetch_data([
+            {'api':'balancesheet','fields':'end_date,accounts_receiv'},
+            {'api':'income','fields':'end_date,revenue'}
+        ],start_date=start_dt_extended,end_date=end_dt_extended)
 
         if financial_data.empty:
             return pd.DataFrame()
@@ -325,7 +342,10 @@ class OperatingProfitMargin(FactorBase):
     def calculate(self) -> pd.DataFrame:
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(months=6)).strftime('%Y-%m-%d')
         end_dt_extended = (pd.to_datetime(self.end_date) + pd.DateOffset(months=3)).strftime('%Y-%m-%d')
-        financial_data = get_financial_data(self.ts_codes, start_dt_extended, end_dt_extended)
+        #financial_data = get_financial_data(self.ts_codes, start_dt_extended, end_dt_extended)
+        financial_data = self.fetch_data([
+            {'api':'income','fields':'end_date,revenue,operate_profit'}
+        ],start_date=start_dt_extended,end_date=end_dt_extended)
 
         if financial_data.empty:
             return pd.DataFrame()

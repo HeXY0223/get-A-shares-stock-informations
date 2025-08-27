@@ -122,11 +122,15 @@ class AnnualizedVolatility(FactorBase):
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(months=2)).strftime('%Y-%m-%d')
 
         # 获取复权收盘价
-        daily_data = get_daily_data(self.ts_codes, start_dt_extended, self.end_date)
-        close_prices = daily_data.pivot(columns='ts_code', values='close')
+        #daily_data = get_daily_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = self.fetch_data([{
+            'api':'pro_bar','fields':'close','adj':'qfq'
+        }],start_date=start_dt_extended)
+        daily_data.rename(columns={'close_qfq':'close'}, inplace=True)
+        close_prices = daily_data.pivot(index='trade_date', columns='ts_code', values='close')
 
         # 计算日收益率
-        daily_returns = close_prices.pct_change()
+        daily_returns = close_prices.pct_change(fill_method="pad")
 
         # 计算滚动30日标准差并年化 (√250)
         rolling_std = daily_returns.rolling(window=30, min_periods=20).std()
@@ -151,8 +155,11 @@ class MaxDrawdown(FactorBase):
         start_dt_extended = (pd.to_datetime(self.start_date) - pd.DateOffset(months=6)).strftime('%Y-%m-%d')
 
         # 获取复权收盘价
-        daily_data = get_daily_data(self.ts_codes, start_dt_extended, self.end_date)
-        close_prices = daily_data.pivot(columns='ts_code', values='close')
+        #daily_data = get_daily_data(self.ts_codes, start_dt_extended, self.end_date)
+        daily_data = self.fetch_data([{
+            'api':'pro_bar','fields':'close'
+        }],start_date=start_dt_extended)
+        close_prices = daily_data.pivot(index='trade_date', columns='ts_code', values='close')
 
         # 计算滚动最大回撤
         def calculate_max_drawdown_series(price_series):
@@ -203,7 +210,10 @@ class BetaValue(FactorBase):
             return pd.DataFrame()
 
         # 3. 获取个股复权收盘价
-        stock_data = get_daily_data(self.ts_codes, start_dt_extended, self.end_date)
+        #stock_data = get_daily_data(self.ts_codes, start_dt_extended, self.end_date)
+        stock_data = self.fetch_data([{
+            'api':'pro_bar','fields':'close'
+        }],start_date=start_dt_extended)
         stock_prices = stock_data.pivot(columns='ts_code', values='close')
 
         # 4. 获取所有相关行业指数的收盘价

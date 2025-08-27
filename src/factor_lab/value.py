@@ -30,27 +30,13 @@ def get_daily_basic_data(ts_codes: list[str], start_date: str, end_date: str) ->
     logger.trace(f"正在获取 {len(ts_codes)} 支股票从 {start_date} 到 {end_date} 的日线基本指标...")
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
-    # pro = easyPro()
-    # all_data = []
-    # for code in ts_codes:
-    #     df = pro.daily_basic(ts_code=code, start_date=start_date, end_date=end_date,
-    #                          fields=['ts_code', 'trade_date', 'total_mv', 'pe_ttm', 'pb', 'ps_ttm', 'dv_ttm'])
-    #     all_data.append(df)
-
-    # 临时改用本地数据库
-    conn = easyConnect()
+    pro = easyPro()
     all_data = []
-    start_date_str = start_date.replace('-', '')
-    end_date_str = end_date.replace('-', '')
-    codes_str = "','".join(ts_codes)
-    query = (
-        f"SELECT ts_code, trade_date, total_mv, pe_ttm, pb, ps_ttm "
-        f"FROM temp_data "
-        f"WHERE ts_code IN ('{codes_str}') "
-        f"AND trade_date BETWEEN '{start_date_str}' AND '{end_date_str}'"
-    )
-    df = pd.read_sql(query, conn)
-    return df
+    for code in ts_codes:
+        df = pro.daily_basic(ts_code=code, start_date=start_date, end_date=end_date,
+                             fields=['ts_code', 'trade_date', 'total_mv', 'pe_ttm', 'pb', 'ps_ttm', 'dv_ttm'])
+        all_data.append(df)
+
 
     return pd.concat(all_data, ignore_index=True)
 
@@ -120,7 +106,10 @@ class PE(FactorBase):
 
     def calculate(self) -> pd.DataFrame:
         # 直接从 Tushare 的日线基本指标中获取 pe_ttm
-        daily_basic = get_daily_basic_data(self.ts_codes, self.start_date, self.end_date)
+        #daily_basic = get_daily_basic_data(self.ts_codes, self.start_date, self.end_date)
+        daily_basic = self.fetch_data([{
+            'api':'daily_basic','fields':'pe_ttm'
+        }])
 
         # 将数据从窄表转换为宽表
         pe_wide = daily_basic.pivot(index='trade_date', columns='ts_code', values='pe_ttm')
@@ -145,7 +134,10 @@ class PB(FactorBase):
 
     def calculate(self) -> pd.DataFrame:
         # 直接获取 pb
-        daily_basic = get_daily_basic_data(self.ts_codes, self.start_date, self.end_date)
+        #daily_basic = get_daily_basic_data(self.ts_codes, self.start_date, self.end_date)
+        daily_basic = self.fetch_data([{
+            'api':'daily_basic','fields':'pb'
+        }])
         pb_wide = daily_basic.pivot(index='trade_date', columns='ts_code', values='pb')
         #pb_wide.index = pd.to_datetime(pb_wide.index)
         pb_wide.index = pd.to_datetime(pb_wide.index, format='%Y%m%d')
@@ -165,7 +157,10 @@ class PS(FactorBase):
 
     def calculate(self) -> pd.DataFrame:
         # 直接获取 ps_ttm
-        daily_basic = get_daily_basic_data(self.ts_codes, self.start_date, self.end_date)
+        #daily_basic = get_daily_basic_data(self.ts_codes, self.start_date, self.end_date)
+        daily_basic = self.fetch_data([{
+            'api':'daily_basic','fields':'ps_ttm'
+        }])
         ps_wide = daily_basic.pivot(index='trade_date', columns='ts_code', values='ps_ttm')
         #ps_wide.index = pd.to_datetime(ps_wide.index)
         ps_wide.index = pd.to_datetime(ps_wide.index, format='%Y%m%d')
@@ -185,7 +180,10 @@ class DY(FactorBase):
 
     def calculate(self) -> pd.DataFrame:
         # 直接获取 dv_ttm (TTM股息率)
-        daily_basic = get_daily_basic_data(self.ts_codes, self.start_date, self.end_date)
+        #daily_basic = get_daily_basic_data(self.ts_codes, self.start_date, self.end_date)
+        daily_basic = self.fetch_data([{
+            'api':'daily_basic','fields':'dv_ttm'
+        }])
         dy_wide = daily_basic.pivot(index='trade_date', columns='ts_code', values='dv_ttm')
         dy_wide.index = pd.to_datetime(dy_wide.index)
         dy_wide = dy_wide.sort_index()
@@ -204,16 +202,22 @@ class EVEBITDA(FactorBase):
 
     def calculate(self) -> pd.DataFrame:
         # 1. 获取日度总市值数据
-        daily_basic = get_daily_basic_data(self.ts_codes, self.start_date, self.end_date)
+        daily_basic = self.fetch_data([{
+            'api':'daily_basic','fields':'ts_code,trade_date,total_mv,pe_ttm,pb,ps_ttm,dv_ttm'
+        }])
         market_cap = daily_basic.pivot(index='trade_date', columns='ts_code', values='total_mv')
         market_cap.index = pd.to_datetime(market_cap.index)
         market_cap = market_cap.sort_index()
 
         # 2. 获取季度财务数据
-        fin_start_date = (pd.to_datetime(self.start_date) - pd.DateOffset(months=6)).strftime('%Y-%m-%d')
+        fin_start_date = self.changedate(self.start_date, days=-180)
 
         # 获取EBITDA
-        fina_indicator = get_financial_data(self.ts_codes, fin_start_date, 'fina_indicator')
+        #fina_indicator = get_financial_data(self.ts_codes, fin_start_date, 'fina_indicator')
+        fina_indicator = self.fetch_data([{
+            'api':'fina_indicator','fields':'end_date,ebitda'
+        }])
+        fina_indicator.rename(columns={'trade_date':'end_date'}, inplace=True)
         fina_indicator['end_date'] = pd.to_datetime(fina_indicator['end_date'].astype(str))  # 转换为datetime对象
 
         # 在 pivot 之前，对关键列去重，每个报告期只保留最后一条记录
@@ -223,7 +227,11 @@ class EVEBITDA(FactorBase):
         ebitda = fina_indicator.pivot(index='end_date', columns='ts_code', values='ebitda')
 
         # 获取并计算有息负债和现金
-        balancesheet = get_financial_data(self.ts_codes, fin_start_date, 'balancesheet')
+        #balancesheet = get_financial_data(self.ts_codes, fin_start_date, 'balancesheet')
+        balancesheet = self.fetch_data([{
+            'api':'balancesheet','fields':'end_date,money_cap,st_borr,non_cur_liab_due_1y,lt_borr,bond_payable'
+        }])
+        balancesheet.rename(columns={'money_cap':'monetary_cap', 'bond_payable':'bonds_payable', 'trade_date':'end_date'}, inplace=True)
         balancesheet['end_date'] = pd.to_datetime(balancesheet['end_date'].astype(str))  # 转换为datetime对象
 
         # 同样对资产负债表数据进行去重处理
