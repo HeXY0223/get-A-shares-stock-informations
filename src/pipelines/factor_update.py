@@ -47,30 +47,30 @@ def run_factor_update(ts_codes: list, start_date:str, end_date:str, table_name:s
 
     # 将所有要运行的因子类放入一个列表中
     factor_classes_to_run = [
-        #Return12M,
-        ## Alpha6M,
-        #RSI14,
-        #PE,
-        #PB,
-        #PS,
-        #DY,
-        #EVEBITDA,
-        #ShareHolderNumCR,
-        #FinancingBalanceCR,
-        ## AnalystRating # 积分不够 高频访问不了 lol
-        ## LonghuNetInflow # 贼慢！
-        #Revenue,
-        #RevenueGR,
-        #CapExGR,
-        #GrossProfitGR,
-        #NetProfitGR,
-        #MACD,
-        #BollingerBandWidth,
-        #AnnualizedVolatility,
-        #MaxDrawdown,
+        Return12M,
+        # Alpha6M,
+        RSI14,
+        PE,
+        PB,
+        PS,
+        DY,
+        EVEBITDA,
+        ShareHolderNumCR,
+        FinancingBalanceCR,
+        # AnalystRating # 积分不够 高频访问不了 lol
+        # LonghuNetInflow # 贼慢！
+        Revenue,
+        RevenueGR,
+        CapExGR,
+        GrossProfitGR,
+        NetProfitGR,
+        MACD,
+        BollingerBandWidth,
+        AnnualizedVolatility,
+        MaxDrawdown,
         # BetaValue, # 要申万指数行情 用不了
-        #TurnoverRate20D,
-        #AmihudIlliquidity,
+        TurnoverRate20D,
+        AmihudIlliquidity,
         ROE,
         DebtToAssetRatio,
         CashFlowToNetIncome,
@@ -105,5 +105,5 @@ if __name__ == '__main__':
     stocks = pd.read_sql(basic_info_query, con=easyConnect())['ts_code'].tolist()
     # 下面一行用作测试
     stocks = stocks[:30]
-    run_factor_update(ts_codes=stocks, start_date='20250101', end_date='20250801', table_name="factor_raw")
+    run_factor_update(ts_codes=stocks, start_date='20250201', end_date='20250801', table_name="factor_raw")
     logger.info("所有因子更新流程执行完毕。")

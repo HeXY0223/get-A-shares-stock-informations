@@ -87,7 +87,8 @@ def neutralize(factor_series: pd.Series, risk_exposures: pd.DataFrame) -> pd.Ser
 
 
 class FactorPreProcessor:
-    def __init__(self, start_date: str, end_date: str, table_raw: str, table_processed: str, create_sql_processed: str):
+    def __init__(self, start_date: str, end_date: str, table_raw: str, table_processed: str, stock_daily:str,
+                 create_sql_processed: str):
         """
         初始化因子处理流水线。
 
@@ -104,6 +105,7 @@ class FactorPreProcessor:
         self.table_raw = table_raw
         self.table_processed = table_processed
         self.create_sql_processed = create_sql_processed
+        self.stock_daily = stock_daily
 
     def _fetch_daily_data(self, trade_date: str) -> pd.DataFrame:
         """为单个交易日获取所有需要的数据，并整合成一个宽表。"""
@@ -118,12 +120,11 @@ class FactorPreProcessor:
         factor_wide_df = raw_factors_df.pivot(index='ts_code', columns='factor_name', values='factor_value')
 
         # 2. 获取当天的中性化所需风险因子（市值、行业等）
-        # 假设您有 'daily_basics' 表存市值，'stock_basics' 表存行业
+        # 假设您有 'daily' 表存市值，'stock_basics' 表存行业
         trade_date_str = trade_date.replace('-', '')
-        daily_basics = 'temp_data'
         sql_risk = f"""
             SELECT db.ts_code, db.total_mv, sb.l1_name 
-            FROM {daily_basics} db
+            FROM {self.stock_daily} db
             LEFT JOIN sw_category sb ON db.ts_code = sb.ts_code
             WHERE db.trade_date = '{trade_date_str}'
         """
